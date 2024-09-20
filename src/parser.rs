@@ -1,3 +1,5 @@
+use crate::condicion::Condicion;
+use crate::condicion_simple::CondicionSimple;
 use crate::delete::Delete;
 use crate::insert::Insert;
 use crate::my_error::MyError;
@@ -6,15 +8,17 @@ use crate::select::Select;
 use crate::update::Update;
 
 #[derive(Debug, PartialEq)]
-pub struct Parser {}
+pub struct Parser {
+    index: usize,
+}
 
 impl Parser {
     pub fn new() -> Self {
-        Parser {}
+        Parser { index: 0 }
     }
 
     pub fn crear_operacion(
-        &self,
+        &mut self,
         archivo: String,
         instruccion: String,
     ) -> Result<Operacion, MyError> {
@@ -26,44 +30,54 @@ impl Parser {
         self.parsear_orden(archivo, tokens)
     }
 
-    fn parsear_orden(&self, archivo: String, tokens: Vec<String>) -> Result<Operacion, MyError> {
-        return match tokens[0] {
-           _ if String::from("INSERT") == tokens[0] => self.parsear_insert(archivo, tokens),
-           _ if String::from("DELETE") == tokens[0] => self.parsear_delete(archivo, tokens),
-           _ if String::from("UPDATE") == tokens[0]  => self.parsear_update(archivo, tokens),
-           _ if String::from("SELECT") == tokens[0]  => self.parsear_select(archivo, tokens),
+    fn parsear_orden(
+        &mut self,
+        archivo: String,
+        tokens: Vec<String>,
+    ) -> Result<Operacion, MyError> {
+        return match tokens[self.index] {
+           _ if String::from("INSERT") == tokens[self.index] => self.parsear_insert(archivo, tokens),
+           _ if String::from("DELETE") == tokens[self.index] => self.parsear_delete(archivo, tokens),
+           _ if String::from("UPDATE") == tokens[self.index]  => self.parsear_update(archivo, tokens),
+           _ if String::from("SELECT") == tokens[self.index]  => self.parsear_select(archivo, tokens),
             _ => Err(MyError::InvalidSyntax("Instruccion inválida. Las instruccines válidas son: INSERT, DELETE, UPDATE, SELECT".to_string())),
         };
     }
     fn parsear_select(
-        &self,
+        &mut self,
         archivo: String,
-        mut tokens: Vec<String>,
+        tokens: Vec<String>,
     ) -> Result<Operacion, MyError> {
         let mut direccion = archivo;
         let mut columnas: Vec<String> = Vec::new();
 
-        tokens.remove(0);
+        self.avanzar();
 
-        while !tokens.is_empty() && tokens[0] != "FROM".to_string() {
-            columnas.push(tokens.remove(0).replace(",", ""));
+        while self.index < tokens.len() && tokens[self.index] != "FROM".to_string() {
+            columnas.push(String::from(&tokens[self.index]).replace(",", ""));
+            self.avanzar();
         }
 
-        if tokens.is_empty() || tokens[0] != "FROM".to_string() {
+        if self.index == tokens.len() || tokens[self.index] != "FROM".to_string() {
             return Err(MyError::InvalidSyntax(
                 "Error en la sintaxis de la instrucción (SELECT)".to_string(),
             ));
         }
 
-        tokens.remove(0);
+        self.avanzar();
 
-        let nombre_archivo = "/".to_string() + &tokens.remove(0) + ".csv";
+        let nombre_archivo = "/".to_string() + &String::from(&tokens[self.index]) + ".csv";
         direccion.push_str(&nombre_archivo);
 
-        if !tokens.is_empty() && tokens[0] == "WHERE".to_string() {
-            tokens.remove(0);
-            let condicion: Vec<String> =
-                tokens.remove(0).split("=").map(|s| s.to_string()).collect();
+        self.avanzar();
+
+        if self.index < tokens.len() && tokens[self.index] == "WHERE".to_string() {
+            self.avanzar();
+            let condicion: Condicion = match self.armar_condicion(&tokens, false) {
+                Ok(c) => c,
+                Err(e) => return Err(e),
+            };
+
             return Ok(Operacion::Select(Select::new(
                 direccion, columnas, condicion,
             )));
@@ -74,35 +88,38 @@ impl Parser {
         }
     }
     fn parsear_update(
-        &self,
+        &mut self,
         archivo: String,
-        mut tokens: Vec<String>,
+        tokens: Vec<String>,
     ) -> Result<Operacion, MyError> {
-        tokens.remove(0);
+        self.avanzar();
 
         let mut direccion = archivo;
 
-        let nombre_archivo = "/".to_string() + &tokens.remove(0) + ".csv";
+        let nombre_archivo = "/".to_string() + &String::from(&tokens[self.index]) + ".csv";
         direccion.push_str(&nombre_archivo);
+        self.avanzar();
 
-        if tokens[0] != "SET" {
+        if tokens[self.index] != "SET" {
             return Err(MyError::InvalidSyntax(
                 "Error en la sintaxis de la instrucción (UPDATE)".to_string(),
             ));
         }
-        tokens.remove(0);
-        let valores: Vec<Vec<String>> = match self.armar_valores_update(&mut tokens) {
+
+        self.avanzar();
+        let valores: Vec<Vec<String>> = match self.armar_valores_update(&tokens) {
             Ok(v) => v,
             Err(e) => return Err(e),
         };
 
-        if tokens.is_empty() || tokens[0] != "WHERE".to_string() {
+        if self.index == tokens.len() || tokens[self.index] != "WHERE".to_string() {
             return Err(MyError::InvalidSyntax(
                 "Error en la sintaxis de la instrucción (UPDATE)".to_string(),
             ));
         }
+        self.avanzar();
 
-        let condicion: Vec<String> = match self.armar_condicion(&mut tokens) {
+        let condicion: Condicion = match self.armar_condicion(&tokens, false) {
             Ok(c) => c,
             Err(_e) => {
                 return Err(MyError::InvalidSyntax(
@@ -116,25 +133,28 @@ impl Parser {
     }
 
     fn parsear_delete(
-        &self,
+        &mut self,
         archivo: String,
-        mut tokens: Vec<String>,
+        tokens: Vec<String>,
     ) -> Result<Operacion, MyError> {
-        tokens.remove(0);
+        self.avanzar();
 
         let mut direccion: String = archivo;
 
-        if tokens[0] != "FROM".to_string() {
+        if tokens[self.index] != "FROM".to_string() {
             return Err(MyError::InvalidSyntax(
                 "Error en la sintaxis de la instruccion (DELETE)".to_string(),
             ));
         }
-        tokens.remove(0);
-        let nombre_archivo = "/".to_string() + &tokens.remove(0) + ".csv";
-        direccion.push_str(&nombre_archivo);
+        self.avanzar();
 
-        if !tokens.is_empty() && tokens[0] == "WHERE".to_string() {
-            let condicion: Vec<String> = match self.armar_condicion(&mut tokens) {
+        let nombre_archivo = "/".to_string() + &String::from(&tokens[self.index]) + ".csv";
+        direccion.push_str(&nombre_archivo);
+        self.avanzar();
+
+        if self.index < tokens.len() && tokens[self.index] == "WHERE".to_string() {
+            self.avanzar();
+            let condicion: Condicion = match self.armar_condicion(&tokens, false) {
                 Ok(c) => c,
                 Err(_e) => {
                     return Err(MyError::InvalidSyntax(
@@ -144,6 +164,9 @@ impl Parser {
             };
 
             return Ok(Operacion::Delete(Delete::new(direccion, condicion)));
+        } else if self.index == tokens.len() {
+            let condicion: Condicion = Condicion::SiempreTrue;
+            return Ok(Operacion::Delete(Delete::new(direccion, condicion)));
         } else {
             return Err(MyError::InvalidSyntax(
                 "Error en la sintaxis de la instrucción (DELETE)".to_string(),
@@ -152,27 +175,31 @@ impl Parser {
     }
 
     fn parsear_insert(
-        &self,
+        &mut self,
         archivo: String,
-        mut tokens: Vec<String>,
+        tokens: Vec<String>,
     ) -> Result<Operacion, MyError> {
-        tokens.remove(0);
+        self.avanzar();
+
         let mut columnas: Vec<String> = Vec::new();
         let mut valores: Vec<String> = Vec::new();
         let mut direccion = archivo;
 
-        if tokens[0] == "INTO".to_string() {
-            tokens.remove(0);
-            let nombre_archivo = "/".to_string() + &tokens.remove(0) + ".csv";
-            direccion.push_str(&nombre_archivo);
+        if tokens[self.index] == "INTO".to_string() {
+            self.avanzar();
 
-            match self.leer_columnas(&mut columnas, &mut tokens) {
+            let nombre_archivo = "/".to_string() + &String::from(&tokens[self.index]) + ".csv";
+            direccion.push_str(&nombre_archivo);
+            self.avanzar();
+
+            match self.leer_columnas(&mut columnas, &tokens) {
                 Ok(l) => l,
                 Err(e) => return Err(e),
             };
-            if !tokens.is_empty() && tokens[0] == "VALUES".to_string() {
-                tokens.remove(0);
-                let _ = match self.leer_columnas(&mut valores, &mut tokens) {
+            if self.index < tokens.len() && tokens[self.index] == "VALUES".to_string() {
+                self.avanzar();
+
+                match self.leer_columnas(&mut valores, &tokens) {
                     Ok(l) => l,
                     Err(e) => return Err(e),
                 };
@@ -187,15 +214,24 @@ impl Parser {
             ));
         }
 
-        println!("{} {:?} {:?}", direccion, columnas, valores);
         Ok(Operacion::Insert(Insert::new(direccion, columnas, valores)))
     }
 
-    fn armar_valores_update(&self, tokens: &mut Vec<String>) -> Result<Vec<Vec<String>>, MyError> {
+    fn avanzar(&mut self) {
+        self.index = self.index + 1;
+    }
+
+    fn armar_valores_update(&mut self, tokens: &Vec<String>) -> Result<Vec<Vec<String>>, MyError> {
         let mut aux: Vec<Vec<String>> = Vec::<Vec<String>>::new();
 
-        while !tokens.is_empty() && tokens[0] != "WHERE".to_string() {
-            aux.push(tokens.remove(0).split('=').map(|s| s.to_string()).collect());
+        while self.index < tokens.len() && tokens[self.index] != "WHERE".to_string() {
+            let clave = String::from(&tokens[self.index]);
+            self.avanzar();
+            self.avanzar();
+            let valor = String::from(&tokens[self.index]).replace(",", "");
+            self.avanzar();
+
+            aux.push(vec![clave, valor]);
         }
 
         if aux.is_empty() {
@@ -203,39 +239,90 @@ impl Parser {
                 "Error en la sintaxis de la instrucción (UPDATE)".to_string(),
             ));
         }
-
         Ok(aux)
     }
 
-    fn armar_condicion(&self, tokens: &mut Vec<String>) -> Result<Vec<String>, MyError> {
-        let mut aux: Vec<String> = Vec::new();
+    fn armar_condicion(
+        &mut self,
+        tokens: &Vec<String>,
+        prioridad: bool,
+    ) -> Result<Condicion, MyError> {
+        let condiciones = vec!["AND".to_string(), "OR".to_string(), "NOT".to_string()];
 
-        if tokens.is_empty() {
-            return Err(MyError::InvalidSyntax(
-                "Error de sintaxis de la instrucción".to_string(),
-            ));
+        let mut r: Condicion = Condicion::SiempreTrue;
+        let mut es_primer_condicion = true;
+
+        while self.index < tokens.len() && !(prioridad && tokens[self.index - 1].contains(")")) {
+            if condiciones.contains(&tokens[self.index]) {
+                let simb = String::from(&tokens[self.index]);
+                self.avanzar();
+
+                let l = match tokens[self.index].contains("(") {
+                    true => match self.armar_condicion(tokens, true) {
+                        Ok(c) => c,
+                        Err(e) => return Err(e),
+                    },
+                    false => self.armar_condicion_simple(tokens),
+                };
+
+                r = match simb {
+                    _ if condiciones[0] == simb => Condicion::And(Box::new(r), Box::new(l)),
+                    _ if condiciones[1] == simb => Condicion::Or(Box::new(r), Box::new(l)),
+                    _ if condiciones[2] == simb => Condicion::Not(Box::new(l)),
+                    _ => return Err(MyError::Error("Error inesperado".to_string())),
+                }
+            } else if es_primer_condicion {
+                r = self.armar_condicion_simple(tokens);
+                es_primer_condicion = false;
+            } else {
+                return Err(MyError::InvalidSyntax(
+                    "Operador condicional inválido".to_string(),
+                ));
+            }
         }
 
-        while !tokens.is_empty() {
-            aux = tokens.remove(0).split("=").map(|s| s.to_string()).collect();
-        }
+        Ok(r)
+    }
 
-        Ok(aux)
+    fn armar_condicion_simple(&mut self, tokens: &Vec<String>) -> Condicion {
+        let col = String::from(&tokens[self.index]).replace("(", "");
+        self.avanzar();
+
+        let s = String::from(&tokens[self.index]);
+        self.avanzar();
+
+        let val = String::from(&tokens[self.index]).replace(")", "");
+        self.avanzar();
+
+        Condicion::CondicionSimple(CondicionSimple::new(col, s, val))
     }
 
     fn leer_columnas(
-        &self,
+        &mut self,
         cols: &mut Vec<String>,
-        tokens: &mut Vec<String>,
+        tokens: &Vec<String>,
     ) -> Result<String, MyError> {
-        if tokens[0].contains("(") {
-            cols.push(tokens.remove(0).replace("(", ""));
+        if tokens[self.index].contains("(") {
+            cols.push(String::from(&tokens[self.index].replace("(", "")));
+            self.avanzar();
 
-            while !tokens[0].contains(")") && !tokens.is_empty() {
-                cols.push(tokens.remove(0));
+            while !tokens[self.index].contains(")") && self.index < tokens.len() {
+                cols.push(String::from(&tokens[self.index]));
+                self.avanzar();
             }
 
-            cols.push(tokens.remove(0).replace(")", ""));
+            if tokens[self.index].contains(")") {
+                cols.push(String::from(&tokens[self.index]));
+                self.avanzar();
+            } else {
+                return Err(MyError::InvalidSyntax(
+                    "Sintaxis inválida para especificar las columnas".to_string(),
+                ));
+            }
+        } else {
+            return Err(MyError::InvalidSyntax(
+                "Sintaxis inválida para especificar las columnas".to_string(),
+            ));
         }
 
         Ok(String::from("Se realizo con exito"))
@@ -244,15 +331,15 @@ impl Parser {
 
 #[test]
 pub fn test01_se_crea_un_parser_correctamente() {
-    let parser = Parser::new();
-    let parser_esperado = Parser {};
+    let mut parser = Parser::new();
+    let mut parser_esperado = Parser { index: 0 };
 
     assert_eq!(parser, parser_esperado);
 }
 
 #[test]
 pub fn test02a_se_quiere_parsear_un_insert_y_hay_errores_en_la_sintaxis() {
-    let parser = Parser::new();
+    let mut parser = Parser::new();
 
     let resultado: Result<Operacion, MyError> = parser.crear_operacion(
         "./test".to_string(),
@@ -269,7 +356,7 @@ pub fn test02a_se_quiere_parsear_un_insert_y_hay_errores_en_la_sintaxis() {
 
 #[test]
 pub fn test02b_se_quiere_parsear_un_insert_y_hay_errores_en_la_sintaxis() {
-    let parser = Parser::new();
+    let mut parser = Parser::new();
 
     let resultado: Result<Operacion, MyError> = parser.crear_operacion(
         "./test".to_string(),
@@ -286,7 +373,7 @@ pub fn test02b_se_quiere_parsear_un_insert_y_hay_errores_en_la_sintaxis() {
 
 #[test]
 pub fn test02c_se_quiere_parsear_un_insert_y_hay_errores_en_la_sintaxis() {
-    let parser = Parser::new();
+    let mut parser = Parser::new();
 
     let resultado: Result<Operacion, MyError> = parser.crear_operacion(
         "./test".to_string(),
@@ -303,7 +390,7 @@ pub fn test02c_se_quiere_parsear_un_insert_y_hay_errores_en_la_sintaxis() {
 
 #[test]
 pub fn test03a_se_quiere_parsear_un_delete_y_hay_errores_en_la_sintaxis() {
-    let parser = Parser::new();
+    let mut parser = Parser::new();
 
     let resultado: Result<Operacion, MyError> =
         parser.crear_operacion("./test".to_string(), "DELETE FROM delete id".to_string());
@@ -318,7 +405,7 @@ pub fn test03a_se_quiere_parsear_un_delete_y_hay_errores_en_la_sintaxis() {
 
 #[test]
 pub fn test03b_se_quiere_parsear_un_delete_y_hay_errores_en_la_sintaxis() {
-    let parser = Parser::new();
+    let mut parser = Parser::new();
 
     let resultado: Result<Operacion, MyError> =
         parser.crear_operacion("./test".to_string(), "DELETE delete WHERE id".to_string());
@@ -333,11 +420,11 @@ pub fn test03b_se_quiere_parsear_un_delete_y_hay_errores_en_la_sintaxis() {
 
 #[test]
 pub fn test04a_se_quiere_parsear_un_update_y_hay_errores_en_la_sintaxis() {
-    let parser = Parser::new();
+    let mut parser = Parser::new();
 
     let resultado: Result<Operacion, MyError> = parser.crear_operacion(
         "./test".to_string(),
-        "UPDATE update SET email=tamundarain@fi.uba.ar id=3".to_string(),
+        "UPDATE update SET email = tamundarain@fi.uba.ar id = 3".to_string(),
     );
     let _msg = "Error en la sintaxis de la instrucción (UPDATE)".to_string();
 
@@ -350,7 +437,7 @@ pub fn test04a_se_quiere_parsear_un_update_y_hay_errores_en_la_sintaxis() {
 
 #[test]
 pub fn test04b_se_quiere_parsear_un_update_y_hay_errores_en_la_sintaxis() {
-    let parser = Parser::new();
+    let mut parser = Parser::new();
 
     let resultado: Result<Operacion, MyError> = parser.crear_operacion(
         "./test".to_string(),
@@ -367,33 +454,56 @@ pub fn test04b_se_quiere_parsear_un_update_y_hay_errores_en_la_sintaxis() {
 
 #[test]
 pub fn test05_se_parsea_un_insert_correctamente() {
-    let parser = Parser::new();
+    let mut parser = Parser::new();
 
-    let resultado: Result<Operacion, MyError> = parser.crear_operacion(
+    let resultado: Result<Operacion, MyError> = match parser.crear_operacion(
         "./test".to_string(),
         "INSERT INTO insert (nombre, apellido) VALUES (Tomas, Amundarain)".to_string(),
-    );
+    ) {
+        Ok(l) => Ok(l),
+        Err(e) => {
+            println!("{}", e);
+            Err(e)
+        }
+    };
+
     assert!(resultado.is_ok());
 }
 
 #[test]
 pub fn test06_se_parsea_un_delete_correctamente() {
-    let parser = Parser::new();
+    let mut parser = Parser::new();
 
     let resultado: Result<Operacion, MyError> = parser.crear_operacion(
         "./test".to_string(),
-        "DELETE FROM insert WHERE nombre=Tomas".to_string(),
+        "DELETE FROM insert WHERE nombre = Tomas".to_string(),
     );
     assert!(resultado.is_ok());
 }
 
 #[test]
 pub fn test07_se_parsea_un_update_correctamente() {
-    let parser = Parser::new();
+    let mut parser = Parser::new();
+
+    let resultado: Result<Operacion, MyError> = match parser.crear_operacion(
+        "./test".to_string(),
+        "UPDATE insert SET nombre = Francisco WHERE nombre = Tomas".to_string(),
+    ) {
+        Ok(c) => Ok(c),
+        Err(e) => {
+            println!("{}", e);
+            Err(e)
+        }
+    };
+    assert!(resultado.is_ok());
+}
+
+#[test]
+pub fn test08_se_parsea_un_select_correctamente() {
+    let mut parser = Parser::new();
 
     let resultado: Result<Operacion, MyError> = parser.crear_operacion(
         "./test".to_string(),
-        "UPDATE insert SET nombre=Francisco WHERE nombre=Tomas".to_string(),
+        "SELECT id FROM select WHERE id_cliente = 1 AND producto = Laptop".to_string(),
     );
-    assert!(resultado.is_ok());
 }

@@ -1,3 +1,4 @@
+use crate::condicion::Condicion;
 use crate::my_error::MyError;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -6,11 +7,11 @@ use std::io::{BufRead, BufReader};
 pub struct Select {
     archivo: String,
     columnas: Vec<String>,
-    condicion: Vec<String>,
+    condicion: Condicion,
 }
 
 impl Select {
-    pub fn new(archivo: String, columnas: Vec<String>, condicion: Vec<String>) -> Self {
+    pub fn new(archivo: String, columnas: Vec<String>, condicion: Condicion) -> Self {
         Select {
             archivo,
             columnas,
@@ -68,12 +69,13 @@ impl Select {
                 .split(",")
                 .map(|s| s.to_string())
                 .collect();
-            let index = match columnas.iter().position(|d| *d == self.condicion[0]) {
-                Some(i) => i,
-                None => 0,
+
+            let verificacion = match self.condicion.verificar(&columnas, &datos) {
+                Ok(c) => c,
+                Err(e) => return Err(e),
             };
 
-            if datos[index] == self.condicion[1] {
+            if verificacion {
                 lineas_elegidas.push(datos);
             }
         }
@@ -86,7 +88,6 @@ impl Select {
 
             aux.push_str(c);
         }
-        println!("{}", aux);
         self.mostrar_lineas_elegidas(lineas_elegidas, columnas);
 
         Ok("Proceso completo".to_string())
@@ -108,6 +109,7 @@ impl Select {
 
                 aux.push_str(&l[pos]);
             }
+
             println!("{}", aux);
         }
     }
@@ -125,34 +127,44 @@ impl Select {
     }
 }
 
-#[test]
-pub fn test01_se_crea_un_select_correctamente() {
-    let select = Select::new(
-        "./test/select.rs".to_string(),
-        Vec::<String>::new(),
-        Vec::<String>::new(),
-    );
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::condicion_simple::CondicionSimple;
 
-    let select_esperado = Select {
-        archivo: "./test/select.rs".to_string(),
-        columnas: Vec::<String>::new(),
-        condicion: Vec::<String>::new(),
-    };
+    #[test]
+    pub fn test01_se_crea_un_select_correctamente() {
+        let select = Select::new(
+            "./test/select.rs".to_string(),
+            Vec::<String>::new(),
+            Condicion::SiempreTrue,
+        );
 
-    assert_eq!(select_esperado, select);
-}
+        let select_esperado = Select {
+            archivo: "./test/select.rs".to_string(),
+            columnas: Vec::<String>::new(),
+            condicion: Condicion::SiempreTrue,
+        };
 
-#[test]
-pub fn test02_se_realiza_un_select_correctamente() {
-    let columnas = vec![
-        "id_cliente".to_string(),
-        "producto".to_string(),
-        "cantidad".to_string(),
-    ];
-    let condicion = vec!["id_cliente".to_string(), "1".to_string()];
-    let select = Select::new("./test/select.csv".to_string(), columnas, condicion);
+        assert_eq!(select_esperado, select);
+    }
 
-    let resultado = select.seleccionar();
+    #[test]
+    pub fn test02_se_realiza_un_select_correctamente() {
+        let columnas = vec![
+            "id_cliente".to_string(),
+            "producto".to_string(),
+            "cantidad".to_string(),
+        ];
+        let condicion = Condicion::CondicionSimple(CondicionSimple::new(
+            "id_cliente".to_string(),
+            "=".to_string(),
+            "1".to_string(),
+        ));
+        let select = Select::new("./test/select.csv".to_string(), columnas, condicion);
 
-    assert!(resultado.is_ok());
+        let resultado = select.seleccionar();
+
+        assert!(resultado.is_ok());
+    }
 }

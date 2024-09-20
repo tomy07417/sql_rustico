@@ -1,3 +1,4 @@
+use crate::condicion::Condicion;
 use crate::my_error::MyError;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
@@ -5,12 +6,12 @@ use std::io::{BufRead, BufReader, Write};
 #[derive(Debug, PartialEq)]
 pub struct Delete {
     archivo: String,
-    claves: Vec<String>,
+    condicion: Condicion,
 }
 
 impl Delete {
-    pub fn new(archivo: String, claves: Vec<String>) -> Self {
-        Delete { archivo, claves }
+    pub fn new(archivo: String, condicion: Condicion) -> Self {
+        Delete { archivo, condicion }
     }
 
     pub fn eliminar(&self) -> Result<String, MyError> {
@@ -54,11 +55,6 @@ impl Delete {
             .map(|s| s.to_string())
             .collect();
 
-        let index_key: usize = match self.obtener_index(&columnas_tabla) {
-            Ok(i) => i,
-            Err(e) => return Err(e),
-        };
-
         for line in buffer.lines() {
             let linea_actual = match line {
                 Ok(l) => l + &String::from("\n"),
@@ -71,7 +67,12 @@ impl Delete {
 
             let valores: &Vec<String> = &linea_actual.split(',').map(|s| s.to_string()).collect();
 
-            if valores[index_key] != self.claves[1] {
+            let verificacion = match self.condicion.verificar(&columnas_tabla, &valores) {
+                Ok(c) => c,
+                Err(e) => return Err(e),
+            };
+
+            if !verificacion {
                 let _ = archivo_temporal.write_all(linea_actual.as_bytes());
             }
         }
@@ -79,54 +80,53 @@ impl Delete {
         let _ = fs::rename("temporal.csv", &self.archivo);
         Ok(String::from("Se elimino correctamente el valor"))
     }
+}
 
-    fn obtener_index(&self, columnas_tabla: &Vec<String>) -> Result<usize, MyError> {
-        if columnas_tabla.contains(&self.claves[0]) {
-            return match columnas_tabla.iter().position(|x| *x == self.claves[0]) {
-                Some(i) => Ok(i),
-                None => Err(MyError::Error(
-                    "El dato que se quiere eliminar no existe".to_string(),
-                )),
-            };
-        } else {
-            return Err(MyError::InvalidColumn(
-                "La columna que se utilizó como key para buscar el dato no existe".to_string(),
-            ));
-        }
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::condicion_simple::CondicionSimple;
+
+    #[test]
+    pub fn test01_se_crea_un_delete_correctamente() {
+        let operacion = Delete::new(String::from("./test/delete.csv"), Condicion::SiempreTrue);
+
+        let operacion_esperada = Delete {
+            archivo: String::from("./test/delete.csv"),
+            condicion: Condicion::SiempreTrue,
+        };
+
+        assert_eq!(operacion, operacion_esperada)
     }
-}
 
-#[test]
-pub fn test01_se_crea_un_delete_correctamente() {
-    let operacion = Delete::new(String::from("./test/delete.csv"), Vec::<String>::new());
+    #[test]
+    pub fn test02_se_hace_un_delete_al_archivo_deseado_correctamente() {
+        //copio los datos de delete_copia.csv en delete.csv para luego operar en el ultimo
+        let _ = fs::copy("./test/delete_copia.csv", "./test/delete.csv");
 
-    let operacion_esperada = Delete {
-        archivo: String::from("./test/delete.csv"),
-        claves: Vec::<String>::new(),
-    };
+        let clave = Condicion::CondicionSimple(CondicionSimple::new(
+            "id".to_string(),
+            "=".to_string(),
+            "5".to_string(),
+        ));
+        let operacion = Delete::new(String::from("./test/delete.csv"), clave);
 
-    assert_eq!(operacion, operacion_esperada)
-}
+        let resultado = operacion.eliminar();
 
-#[test]
-pub fn test02_se_hace_un_delete_al_archivo_deseado_correctamente() {
-    //copio los datos de delete_copia.csv en delete.csv para luego operar en el ultimo
-    let _ = fs::copy("./test/delete_copia.csv", "./test/delete.csv");
+        assert!(resultado.is_ok())
+    }
 
-    let claves = vec![String::from("id"), String::from("5")];
-    let operacion = Delete::new(String::from("./test/delete.csv"), claves);
+    #[test]
+    pub fn test03_se_hace_un_delete_y_se_quiere_eliminar_un_elemento_con_una_key_que_no_existe() {
+        let claves = Condicion::CondicionSimple(CondicionSimple::new(
+            "key_no_existe".to_string(),
+            "=".to_string(),
+            "9".to_string(),
+        ));
+        let operacion = Delete::new(String::from("./test/delete.csv"), claves);
 
-    let resultado = operacion.eliminar();
+        let resultado = operacion.eliminar();
 
-    assert!(resultado.is_ok())
-}
-
-#[test]
-pub fn test03_se_hace_un_delete_y_se_quiere_eliminar_un_elemento_con_una_key_que_no_existe() {
-    let claves = vec![String::from("id_no_existe"), String::from("5")];
-    let operacion = Delete::new(String::from("./test/delete.csv"), claves);
-
-    let resultado = operacion.eliminar();
-
-    assert!(resultado.is_err())
+        assert!(resultado.is_err())
+    }
 }

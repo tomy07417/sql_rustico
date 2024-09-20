@@ -1,3 +1,4 @@
+use crate::condicion::Condicion;
 use crate::my_error::MyError;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
@@ -6,15 +7,15 @@ use std::io::{BufRead, BufReader, Write};
 pub struct Update {
     archivo: String,
     valores: Vec<Vec<String>>,
-    clave: Vec<String>,
+    condicion: Condicion,
 }
 
 impl Update {
-    pub fn new(archivo: String, valores: Vec<Vec<String>>, clave: Vec<String>) -> Self {
+    pub fn new(archivo: String, valores: Vec<Vec<String>>, condicion: Condicion) -> Self {
         Update {
             archivo,
             valores,
-            clave,
+            condicion,
         }
     }
 
@@ -60,11 +61,6 @@ impl Update {
             .map(|s| s.to_string())
             .collect();
 
-        let index_clave: usize = match columnas_vec.iter().position(|c| *c == self.clave[0]) {
-            Some(i) => i,
-            None => return Err(MyError::Error("La key ingresada es incorrecta".to_string())),
-        };
-
         for line in buffer.lines() {
             let linea_actual = match line {
                 Ok(l) => l + &String::from("\n"),
@@ -81,7 +77,12 @@ impl Update {
                 .map(|s| s.to_string())
                 .collect();
 
-            if valores[index_clave] == self.clave[1] {
+            let verificacion = match self.condicion.verificar(&columnas_vec, valores) {
+                Ok(c) => c,
+                Err(e) => return Err(e),
+            };
+
+            if verificacion {
                 let linea_nueva = self.crear_linea_nueva(valores, &columnas_vec);
                 let _ = archivo_temporal.write_all(linea_nueva.as_bytes());
             } else {
@@ -125,32 +126,42 @@ impl Update {
     }
 }
 
-#[test]
-pub fn test01_se_crea_correctamente_un_update() {
-    let operacion = Update::new(
-        String::from("./test/update.csv"),
-        Vec::<Vec<String>>::new(),
-        Vec::new(),
-    );
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::condicion_simple::CondicionSimple;
 
-    let operacion_esperada = Update {
-        archivo: String::from("./test/update.csv"),
-        valores: Vec::<Vec<String>>::new(),
-        clave: Vec::new(),
-    };
+    #[test]
+    pub fn test01_se_crea_correctamente_un_update() {
+        let operacion = Update::new(
+            String::from("./test/update.csv"),
+            Vec::<Vec<String>>::new(),
+            Condicion::SiempreTrue,
+        );
 
-    assert_eq!(operacion, operacion_esperada);
-}
+        let operacion_esperada = Update {
+            archivo: String::from("./test/update.csv"),
+            valores: Vec::<Vec<String>>::new(),
+            condicion: Condicion::SiempreTrue,
+        };
 
-#[test]
-pub fn test02_se_realiza_un_update_correctamente() {
-    let _ = fs::copy("./test/update_copia.csv", "./test/update.csv");
+        assert_eq!(operacion, operacion_esperada);
+    }
 
-    let valores = vec![vec![String::from("cantidad"), String::from("4")]];
-    let claves = vec![String::from("id_cliente"), String::from("1")];
-    let operacion = Update::new(String::from("./test/update.csv"), valores, claves);
+    #[test]
+    pub fn test02_se_realiza_un_update_correctamente() {
+        let _ = fs::copy("./test/update_copia.csv", "./test/update.csv");
 
-    let resultado = operacion.update();
+        let valores = vec![vec![String::from("cantidad"), String::from("4")]];
+        let condicion = Condicion::CondicionSimple(CondicionSimple::new(
+            "id_cliente".to_string(),
+            "=".to_string(),
+            "1".to_string(),
+        ));
+        let operacion = Update::new(String::from("./test/update.csv"), valores, condicion);
 
-    assert!(resultado.is_ok());
+        let resultado = operacion.update();
+
+        assert!(resultado.is_ok());
+    }
 }

@@ -79,68 +79,76 @@ impl Insert {
     }
 }
 
-#[test]
-pub fn test01_se_crea_un_insert_correctamente() {
-    let operacion = Insert::new(String::from("~/test/insert.csv"), Vec::new(), Vec::new());
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::fs;
 
-    let operacion_esperada = Insert {
-        archivo: String::from("~/test/insert.csv"),
-        columnas: Vec::new(),
-        valores: Vec::new(),
-    };
+    #[test]
+    pub fn test01_se_crea_un_insert_correctamente() {
+        let operacion = Insert::new(String::from("~/test/insert.csv"), Vec::new(), Vec::new());
 
-    assert_eq!(operacion, operacion_esperada);
-}
+        let operacion_esperada = Insert {
+            archivo: String::from("~/test/insert.csv"),
+            columnas: Vec::new(),
+            valores: Vec::new(),
+        };
 
-#[test]
-pub fn test02_hace_un_insert_correctamente_al_archivo_deseado() {
-    let columnas: Vec<String> = vec![String::from("nombre"), String::from("apellido")];
-    let valores: Vec<String> = vec![String::from("Tomas"), String::from("Amundarain")];
-    let operacion = Insert::new(String::from("./test/insert.csv"), columnas, valores);
+        assert_eq!(operacion, operacion_esperada);
+    }
 
-    let resultado = operacion.insertar();
+    #[test]
+    pub fn test02_hace_un_insert_correctamente_al_archivo_deseado() {
+        let _ = fs::copy("./test/insert_copia.csv", "./test/insert.csv");
 
-    assert!(resultado.is_ok())
-}
+        let columnas: Vec<String> = vec![String::from("nombre"), String::from("apellido")];
+        let valores: Vec<String> = vec![String::from("Tomas"), String::from("Amundarain")];
+        let operacion = Insert::new(String::from("./test/insert.csv"), columnas, valores);
 
-#[test]
-pub fn test03_se_hace_un_insert_y_salta_un_error_por_columna_invalida() {
-    let columnas: Vec<String> = vec![
-        String::from("nombre"),
-        String::from("apellido"),
-        String::from("columna_extra"),
-    ];
-    let valores: Vec<String> = vec![String::from("Tomas"), String::from("Amundarain")];
-    let operacion = Insert::new(String::from("./test/insert.csv"), columnas, valores);
+        let resultado = operacion.insertar();
 
-    let resultado = operacion.insertar();
-    let _descripcion_error = String::from(
-        "Las columnas ingresadas no son válidas para la tabla que se quiere modificar",
-    );
+        assert!(resultado.is_ok())
+    }
 
-    assert!(resultado.is_err());
-    assert!(matches!(
-        resultado.unwrap_err(),
-        MyError::InvalidColumn(_descripcion_error)
-    ));
-}
+    #[test]
+    pub fn test03_se_hace_un_insert_y_salta_un_error_por_columna_invalida() {
+        let columnas: Vec<String> = vec![
+            String::from("nombre"),
+            String::from("apellido"),
+            String::from("columna_extra"),
+        ];
+        let valores: Vec<String> = vec![String::from("Tomas"), String::from("Amundarain")];
+        let operacion = Insert::new(String::from("./test/insert.csv"), columnas, valores);
 
-#[test]
-pub fn test04_se_hace_un_insert_y_salta_un_error_por_tabla_invalida() {
-    let columnas: Vec<String> = vec![
-        String::from("nombre"),
-        String::from("apellido"),
-        String::from("columna_extra"),
-    ];
-    let valores: Vec<String> = vec![String::from("Tomas"), String::from("Amundarain")];
-    let operacion = Insert::new(String::from("./test/isert.csv"), columnas, valores);
+        let resultado = operacion.insertar();
+        let _descripcion_error = String::from(
+            "Las columnas ingresadas no son válidas para la tabla que se quiere modificar",
+        );
 
-    let resultado = operacion.insertar();
-    let _descripcion_error = String::from("Directorio o el nombre de la tabla incorrecto ");
+        assert!(resultado.is_err());
+        assert!(matches!(
+            resultado.unwrap_err(),
+            MyError::InvalidColumn(_descripcion_error)
+        ));
+    }
 
-    assert!(resultado.is_err());
-    assert!(matches!(
-        resultado.unwrap_err(),
-        MyError::InvalidTable(_descripcion_error)
-    ));
+    #[test]
+    pub fn test04_se_hace_un_insert_y_salta_un_error_por_tabla_invalida() {
+        let columnas: Vec<String> = vec![
+            String::from("nombre"),
+            String::from("apellido"),
+            String::from("columna_extra"),
+        ];
+        let valores: Vec<String> = vec![String::from("Tomas"), String::from("Amundarain")];
+        let operacion = Insert::new(String::from("./test/isert.csv"), columnas, valores);
+
+        let resultado = operacion.insertar();
+        let _descripcion_error = String::from("Directorio o el nombre de la tabla incorrecto ");
+
+        assert!(resultado.is_err());
+        assert!(matches!(
+            resultado.unwrap_err(),
+            MyError::InvalidTable(_descripcion_error)
+        ));
+    }
 }

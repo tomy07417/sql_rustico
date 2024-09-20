@@ -6,7 +6,7 @@ fn main() {
     let direccion = args.remove(1);
     let instruccion = args.remove(1);
 
-    let parser = Parser::new();
+    let mut parser = Parser::new();
 
     let operacion = match parser.crear_operacion(direccion, instruccion) {
         Ok(o) => o,
