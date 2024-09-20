@@ -62,20 +62,19 @@ impl Insert {
             }
         };
 
-
         for dato in &self.valores {
-        let mut linea_nueva = String::new();
+            let mut linea_nueva = String::new();
             for valor in dato {
-            if linea_nueva.is_empty() {
-                linea_nueva = linea_nueva + valor;
-            } else {
-                linea_nueva = linea_nueva + &String::from(',') + valor;
+                if linea_nueva.is_empty() {
+                    linea_nueva = linea_nueva + valor;
+                } else {
+                    linea_nueva = linea_nueva + &String::from(',') + valor;
+                }
             }
-        }
 
-        linea_nueva = linea_nueva + "\n";
+            linea_nueva = linea_nueva + "\n";
 
-        let _ = archivo_escritura.write_all(linea_nueva.as_bytes());
+            let _ = archivo_escritura.write_all(linea_nueva.as_bytes());
         }
         Ok(String::from("Insert exitoso"))
     }
@@ -88,7 +87,11 @@ mod test {
 
     #[test]
     pub fn test01_se_crea_un_insert_correctamente() {
-        let operacion = Insert::new(String::from("~/test/insert.csv"), Vec::new(), Vec::<Vec<String>>::new());
+        let operacion = Insert::new(
+            String::from("~/test/insert.csv"),
+            Vec::new(),
+            Vec::<Vec<String>>::new(),
+        );
 
         let operacion_esperada = Insert {
             archivo: String::from("~/test/insert.csv"),
@@ -159,9 +162,16 @@ mod test {
         let _ = fs::copy("./test/insert_copia.csv", "./test/insert_multiple.csv");
 
         let columnas = vec!["nombre".to_string(), "apellido".to_string()];
-        let valores = vec![vec!["Tomas".to_string(), "Amundarain".to_string()], vec!["Simon".to_string(), "Amundarain".to_string()]];
+        let valores = vec![
+            vec!["Tomas".to_string(), "Amundarain".to_string()],
+            vec!["Simon".to_string(), "Amundarain".to_string()],
+        ];
 
-        let operacion = Insert::new(String::from("./test/insert_multiple.csv"), columnas, valores);
+        let operacion = Insert::new(
+            String::from("./test/insert_multiple.csv"),
+            columnas,
+            valores,
+        );
 
         let resultado = operacion.insertar();
 

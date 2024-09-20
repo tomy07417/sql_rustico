@@ -94,27 +94,39 @@ impl Select {
     }
 
     fn mostrar_lineas_elegidas(&self, lineas: Vec<Vec<String>>, col: Vec<String>) {
+        match self.columnas.contains(&"*".to_string()) {
+            true => println!("{}", col.join(", ")),
+            false => println!("{}", self.columnas.join(", ")),
+        }
+
         for l in &lineas {
             let mut aux = String::new();
 
-            for c in &self.columnas {
-                let pos = match col.iter().position(|d| *d == *c) {
-                    Some(d) => d,
-                    None => 0,
-                };
+            if self.columnas.contains(&String::from("*")) {
+                aux = l.join(", ");
+            } else {
+                for c in &self.columnas {
+                    let pos = match col.iter().position(|d| *d == *c) {
+                        Some(d) => d,
+                        None => 0,
+                    };
 
-                if !aux.is_empty() {
-                    aux.push_str(",");
+                    if !aux.is_empty() {
+                        aux.push_str(",");
+                    }
+
+                    aux.push_str(&l[pos]);
                 }
-
-                aux.push_str(&l[pos]);
             }
-
             println!("{}", aux);
         }
     }
 
     fn corroborar_columnas(&self, columnas: &Vec<String>) -> Result<String, MyError> {
+        if self.columnas.len() == 1 && self.columnas.contains(&"*".to_string()) {
+            return Ok("Todo correcto".to_string());
+        }
+
         for col in &self.columnas {
             if !columnas.contains(&col) {
                 return Err(MyError::InvalidColumn(

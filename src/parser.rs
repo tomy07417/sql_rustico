@@ -81,6 +81,11 @@ impl Parser {
             return Ok(Operacion::Select(Select::new(
                 direccion, columnas, condicion,
             )));
+        } else if self.index == tokens.len() {
+            let condicion: Condicion = Condicion::SiempreTrue;
+            return Ok(Operacion::Select(Select::new(
+                direccion, columnas, condicion,
+            )));
         } else {
             return Err(MyError::InvalidSyntax(
                 "Error en la sintaxis de la instrucción (SELECT)".to_string(),
@@ -198,17 +203,16 @@ impl Parser {
             };
             if self.index < tokens.len() && tokens[self.index] == "VALUES".to_string() {
                 self.avanzar();
-                
+
                 while self.index < tokens.len() {
                     let mut aux = Vec::new();
                     match self.leer_columnas(&mut aux, &tokens) {
-                    Ok(l) => l,
-                    Err(e) => return Err(e),
+                        Ok(l) => l,
+                        Err(e) => return Err(e),
                     };
 
                     valores.push(aux);
                 }
-
             } else {
                 return Err(MyError::InvalidSyntax(
                     "Error en la sintaxis de la instrucción (INSERT)".to_string(),
@@ -512,6 +516,6 @@ pub fn test08_se_parsea_un_select_correctamente() {
         "./test".to_string(),
         "SELECT id FROM select WHERE id_cliente = 1 AND producto = Laptop".to_string(),
     );
-    
+
     assert!(resultado.is_ok());
 }
