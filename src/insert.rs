@@ -6,11 +6,11 @@ use std::io::{self, BufRead, Write};
 pub struct Insert {
     archivo: String,
     columnas: Vec<String>,
-    valores: Vec<String>,
+    valores: Vec<Vec<String>>,
 }
 
 impl Insert {
-    pub fn new(archivo: String, columnas: Vec<String>, valores: Vec<String>) -> Self {
+    pub fn new(archivo: String, columnas: Vec<String>, valores: Vec<Vec<String>>) -> Self {
         Insert {
             archivo,
             columnas,
@@ -62,8 +62,10 @@ impl Insert {
             }
         };
 
+
+        for dato in &self.valores {
         let mut linea_nueva = String::new();
-        for valor in &self.valores {
+            for valor in dato {
             if linea_nueva.is_empty() {
                 linea_nueva = linea_nueva + valor;
             } else {
@@ -74,7 +76,7 @@ impl Insert {
         linea_nueva = linea_nueva + "\n";
 
         let _ = archivo_escritura.write_all(linea_nueva.as_bytes());
-
+        }
         Ok(String::from("Insert exitoso"))
     }
 }
@@ -86,12 +88,12 @@ mod test {
 
     #[test]
     pub fn test01_se_crea_un_insert_correctamente() {
-        let operacion = Insert::new(String::from("~/test/insert.csv"), Vec::new(), Vec::new());
+        let operacion = Insert::new(String::from("~/test/insert.csv"), Vec::new(), Vec::<Vec<String>>::new());
 
         let operacion_esperada = Insert {
             archivo: String::from("~/test/insert.csv"),
             columnas: Vec::new(),
-            valores: Vec::new(),
+            valores: Vec::<Vec<String>>::new(),
         };
 
         assert_eq!(operacion, operacion_esperada);
@@ -102,7 +104,7 @@ mod test {
         let _ = fs::copy("./test/insert_copia.csv", "./test/insert.csv");
 
         let columnas: Vec<String> = vec![String::from("nombre"), String::from("apellido")];
-        let valores: Vec<String> = vec![String::from("Tomas"), String::from("Amundarain")];
+        let valores = vec![vec![String::from("Tomas"), String::from("Amundarain")]];
         let operacion = Insert::new(String::from("./test/insert.csv"), columnas, valores);
 
         let resultado = operacion.insertar();
@@ -117,7 +119,7 @@ mod test {
             String::from("apellido"),
             String::from("columna_extra"),
         ];
-        let valores: Vec<String> = vec![String::from("Tomas"), String::from("Amundarain")];
+        let valores = vec![vec![String::from("Tomas"), String::from("Amundarain")]];
         let operacion = Insert::new(String::from("./test/insert.csv"), columnas, valores);
 
         let resultado = operacion.insertar();
@@ -139,7 +141,7 @@ mod test {
             String::from("apellido"),
             String::from("columna_extra"),
         ];
-        let valores: Vec<String> = vec![String::from("Tomas"), String::from("Amundarain")];
+        let valores = vec![vec![String::from("Tomas"), String::from("Amundarain")]];
         let operacion = Insert::new(String::from("./test/isert.csv"), columnas, valores);
 
         let resultado = operacion.insertar();
@@ -150,5 +152,19 @@ mod test {
             resultado.unwrap_err(),
             MyError::InvalidTable(_descripcion_error)
         ));
+    }
+
+    #[test]
+    pub fn test05_se_hace_multiples_inserts_en_una_sola_operacion() {
+        let _ = fs::copy("./test/insert_copia.csv", "./test/insert_multiple.csv");
+
+        let columnas = vec!["nombre".to_string(), "apellido".to_string()];
+        let valores = vec![vec!["Tomas".to_string(), "Amundarain".to_string()], vec!["Simon".to_string(), "Amundarain".to_string()]];
+
+        let operacion = Insert::new(String::from("./test/insert_multiple.csv"), columnas, valores);
+
+        let resultado = operacion.insertar();
+
+        assert!(resultado.is_ok());
     }
 }
