@@ -70,6 +70,8 @@ impl Parser {
         direccion.push_str(&nombre_archivo);
 
         self.avanzar();
+        let mut order: String = String::new();
+        let mut asc: bool = true;
 
         if self.index < tokens.len() && tokens[self.index] == "WHERE".to_string() {
             self.avanzar();
@@ -78,18 +80,25 @@ impl Parser {
                 Err(e) => return Err(e),
             };
 
+            match self.armar_orden(&tokens, &mut order, &mut asc) {
+                Ok(c) => c,
+                Err(e) => return Err(e),
+            };
+
             return Ok(Operacion::Select(Select::new(
-                direccion, columnas, condicion,
-            )));
-        } else if self.index == tokens.len() {
-            let condicion: Condicion = Condicion::SiempreTrue;
-            return Ok(Operacion::Select(Select::new(
-                direccion, columnas, condicion,
+                direccion, columnas, condicion, order, asc,
             )));
         } else {
-            return Err(MyError::InvalidSyntax(
-                "Error en la sintaxis de la instrucción (SELECT)".to_string(),
-            ));
+            let condicion: Condicion = Condicion::SiempreTrue;
+
+            match self.armar_orden(&tokens, &mut order, &mut asc) {
+                Ok(c) => c,
+                Err(e) => return Err(e),
+            };
+
+            return Ok(Operacion::Select(Select::new(
+                direccion, columnas, condicion, order, asc,
+            )));
         }
     }
     fn parsear_update(
@@ -229,6 +238,48 @@ impl Parser {
 
     fn avanzar(&mut self) {
         self.index = self.index + 1;
+    }
+
+    fn armar_orden(
+        &mut self,
+        tokens: &Vec<String>,
+        order: &mut String,
+        asc: &mut bool,
+    ) -> Result<String, MyError> {
+        if self.index == tokens.len() || tokens[self.index] != "ORDER".to_string() {
+            return Err(MyError::InvalidSyntax(
+                "Error de sintaxis al definir el ORDER BY".to_string(),
+            ));
+        }
+
+        self.avanzar();
+
+        if self.index == tokens.len() || tokens[self.index] != "BY".to_string() {
+            return Err(MyError::InvalidSyntax(
+                "Error de sintaxis al definir el ORDER BY".to_string(),
+            ));
+        }
+
+        self.avanzar();
+
+        if self.index == tokens.len() {
+            return Err(MyError::InvalidSyntax(
+                "Error de sintaxis al definir el ORDER BY".to_string(),
+            ));
+        }
+
+        *order = String::from(&tokens[self.index]);
+        self.avanzar();
+
+        if self.index < tokens.len() && tokens[self.index] == "desc".to_string() {
+            *asc = false;
+        } else if self.index < tokens.len() && tokens[self.index] != "desc".to_string() {
+            return Err(MyError::InvalidSyntax(
+                "Error de sintaxis al definir el ORDER BY".to_string(),
+            ));
+        }
+
+        Ok("Todo ok".to_string())
     }
 
     fn armar_valores_update(&mut self, tokens: &Vec<String>) -> Result<Vec<Vec<String>>, MyError> {

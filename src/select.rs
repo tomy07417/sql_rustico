@@ -8,14 +8,24 @@ pub struct Select {
     archivo: String,
     columnas: Vec<String>,
     condicion: Condicion,
+    order: String,
+    asc: bool,
 }
 
 impl Select {
-    pub fn new(archivo: String, columnas: Vec<String>, condicion: Condicion) -> Self {
+    pub fn new(
+        archivo: String,
+        columnas: Vec<String>,
+        condicion: Condicion,
+        order: String,
+        asc: bool,
+    ) -> Self {
         Select {
             archivo,
             columnas,
             condicion,
+            order,
+            asc,
         }
     }
 
@@ -88,9 +98,35 @@ impl Select {
 
             aux.push_str(c);
         }
-        self.mostrar_lineas_elegidas(lineas_elegidas, columnas);
+        let _ = self.ordenar_lineas_elegidas(&mut lineas_elegidas, &columnas);
+        let _ = self.mostrar_lineas_elegidas(lineas_elegidas, columnas);
 
         Ok("Proceso completo".to_string())
+    }
+
+    fn ordenar_lineas_elegidas(
+        &self,
+        lineas: &mut Vec<Vec<String>>,
+        col: &Vec<String>,
+    ) -> Result<String, MyError> {
+        let index = match col.iter().position(|c| *c == self.order) {
+            Some(i) => i,
+            None => {
+                return Err(MyError::InvalidColumn(
+                    "Columna especificada para ordenar no existe en la tabla".to_string(),
+                ))
+            }
+        };
+
+        match self.asc {
+            true => lineas.sort_by_key(|l| String::from(&l[index])),
+            false => {
+                lineas.sort_by_key(|l| String::from(&l[index]));
+                lineas.reverse();
+            }
+        };
+
+        Ok("Todo ok".to_string())
     }
 
     fn mostrar_lineas_elegidas(&self, lineas: Vec<Vec<String>>, col: Vec<String>) {
@@ -150,12 +186,16 @@ mod test {
             "./test/select.rs".to_string(),
             Vec::<String>::new(),
             Condicion::SiempreTrue,
+            "".to_string(),
+            false,
         );
 
         let select_esperado = Select {
             archivo: "./test/select.rs".to_string(),
             columnas: Vec::<String>::new(),
             condicion: Condicion::SiempreTrue,
+            order: "".to_string(),
+            asc: false,
         };
 
         assert_eq!(select_esperado, select);
@@ -173,7 +213,38 @@ mod test {
             "=".to_string(),
             "1".to_string(),
         ));
-        let select = Select::new("./test/select.csv".to_string(), columnas, condicion);
+        let select = Select::new(
+            "./test/select.csv".to_string(),
+            columnas,
+            condicion,
+            "".to_string(),
+            false,
+        );
+
+        let resultado = select.seleccionar();
+
+        assert!(resultado.is_ok());
+    }
+
+    #[test]
+    pub fn test03_se_realiza_un_select_y_se_hace_un_orderby() {
+        let columnas = vec![
+            "id_cliente".to_string(),
+            "producto".to_string(),
+            "cantidad".to_string(),
+        ];
+        let condicion = Condicion::CondicionSimple(CondicionSimple::new(
+            "id_cliente".to_string(),
+            "=".to_string(),
+            "1".to_string(),
+        ));
+        let select = Select::new(
+            "./test/select.csv".to_string(),
+            columnas,
+            condicion,
+            "cantidad".to_string(),
+            false,
+        );
 
         let resultado = select.seleccionar();
 
