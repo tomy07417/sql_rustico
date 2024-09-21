@@ -3,6 +3,19 @@ use crate::my_error::MyError;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 
+///# Update
+///Esta estructura proporciona todo lo necesario para implementar la instrucción UPDATE de sql.
+///
+///**Ejemplo**
+///let update = Update::new(direccion_archivo, valores, condicion);
+///update.update();
+///
+///**Parámetros**
+///- 'archivo': Es la dirección del archivo que representa a la tabla que se le quiere realizar la
+///operación.
+///- 'valores': Es un array que contiene todo los valores que se quieren modificar y en que columna
+///se encuentran.
+///- 'condicion': Tiene la condición que deben cumplir las filas para que se le modifique el valor.
 #[derive(Debug, PartialEq)]
 pub struct Update {
     archivo: String,
@@ -11,6 +24,18 @@ pub struct Update {
 }
 
 impl Update {
+    ///# Update.new()
+    ///Esta función crea una nueva instacia de Update.
+    ///
+    ///**Parámetros**
+    ///- 'archivo': Es la dirección del archivo que representa a la tabla que se le quiere realizar la
+    ///operación.
+    ///- 'valores': Es un array que contiene todo los valores que se quieren modificar y en que columna
+    ///se encuentran.
+    ///- 'condicion': Tiene la condición que deben cumplir las filas para que se le modifique el valor.
+    ///
+    ///**Return**
+    ///Devuelve un *struct* del tipo *Update*.
     pub fn new(archivo: String, valores: Vec<Vec<String>>, condicion: Condicion) -> Self {
         Update {
             archivo,
@@ -18,7 +43,13 @@ impl Update {
             condicion,
         }
     }
-
+    ///# Update.update()
+    ///Esta función realiza la instrucción UPDATE de sql.
+    ///
+    ///**Reuturn**
+    ///Devuelve un *Result<String, MyError>* en caso que durante la ejecución de la función no haya
+    ///ocurrido ningún error se devuelve un *String* para indicar que la operación se realizó
+    ///correctamente, en caso contrario se decvuelve un error del tipo *MyError*.
     pub fn update(&self) -> Result<String, MyError> {
         let archivo = match File::open(&self.archivo) {
             Ok(f) => f,

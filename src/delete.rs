@@ -3,6 +3,17 @@ use crate::my_error::MyError;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 
+///# Delete
+///Esta estructura proporciona toda la funcionalidad necesaria para poder soportar la instrucción
+///de DELETE de sql.
+///
+///**Ejemplo**
+///let delete = Delete::new(nombre_archivo, condicion);
+///delete.eliminar();
+///
+///**Parámetros**
+///- 'archivo': Contiene la dirección en donde se encuentra el archivo.
+///- 'condicion': Contiene la condición que debe cumplir la fila para que sea eliminada o no.
 #[derive(Debug, PartialEq)]
 pub struct Delete {
     archivo: String,
@@ -10,10 +21,28 @@ pub struct Delete {
 }
 
 impl Delete {
+    ///# Delete.new()
+    ///Esta función crea una nueva instacia de Delete.
+    ///
+    ///**Parámetros**
+    ///- 'archivo': La dirección de donde se encuentra el archivo al que se quiere aplicar la
+    ///opereción.
+    ///- 'condicion': Es la condición que se debe cumplir para que la fila de la tabla sea
+    ///eliminada de la misma.
+    ///
+    ///**Return**
+    ///Devuelve un *struct* de tipo *Delete*.
     pub fn new(archivo: String, condicion: Condicion) -> Self {
         Delete { archivo, condicion }
     }
-
+    ///# Delete.eliminar()
+    ///Esta función realiza la eliminación de las filas de una tabla que cumplan la condición que ya tiene
+    ///definida el struct.
+    ///
+    ///**Return**
+    ///Devuelve un *Result<String, MyError>* en caso de que no haya ocurrido un error devuelve el
+    ///*String* para avisar que se realizo la operción y en caso contrario se devuelve un error de
+    ///tipo *MyError*.
     pub fn eliminar(&self) -> Result<String, MyError> {
         let archivo = match File::open(&self.archivo) {
             Ok(a) => a,

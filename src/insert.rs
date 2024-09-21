@@ -2,6 +2,19 @@ use crate::my_error::MyError;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufRead, Write};
 
+///# Insert
+///Esta estructura proporciona toda la funcionalidad para implementar la operación INSERT en sql.
+///
+///**Ejemplo**
+///let insert = Insert::new(ruta_archivo, columnas_tabla, valores);
+///insert.insertar();
+///
+///**Parámetros**
+///- 'archivo': Contiene la dirección del archivo al que representa a la tabla que se quiere
+///modificar.
+///- 'columnas': Contiene el nombre de todas las columnas que tiene la tabla (tienen que estar en
+///el orden en que estan en la tabla).
+///- 'valores': Contiene todas la filas que se quieren agregar a la tabla.
 #[derive(Debug, PartialEq)]
 pub struct Insert {
     archivo: String,
@@ -10,6 +23,17 @@ pub struct Insert {
 }
 
 impl Insert {
+    ///# Insert.new()
+    ///Esta función crea una nueva instacia de Insert
+    ///
+    ///**Parámetros**
+    ///- 'archivo': Es la dirección en donde se encuentra el archivo que se quiere modificar.
+    ///- 'columnas': Son los nombres de las columnas de la tabla a la que se quiere modificar
+    ///(deben estar en el orden en el que aparecen en la tabla).
+    ///- 'valores': Son todos las filas que se quieren agragar a la tabla.
+    ///
+    ///**Return**
+    ///Devuelve un *struct* del tipo *Insert*.
     pub fn new(archivo: String, columnas: Vec<String>, valores: Vec<Vec<String>>) -> Self {
         Insert {
             archivo,
@@ -17,7 +41,12 @@ impl Insert {
             valores,
         }
     }
-
+    ///# Insert.insertar()
+    ///Esta función realiza la operación de INSERT.
+    ///
+    ///**Return**
+    ///Devuelve un *Result<String, MyError>* en caso de que durante la ejecución no haya ocurrido
+    ///ningún error se devuelve el *String* de lo contrario se devuelve un error del tipo *MyError*.
     pub fn insertar(&self) -> Result<String, MyError> {
         let archivo = match File::open(&self.archivo) {
             Ok(f) => f,

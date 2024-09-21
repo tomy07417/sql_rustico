@@ -1,6 +1,23 @@
 use crate::condicion_simple::CondicionSimple;
 use crate::my_error::MyError;
 
+///# Condición
+///Esta estructura contiene todo lo necesario para el soporte
+///de las condiciones en las instrucciones sql
+///
+///**Ejemplo**
+///let cond_simple = Condicion::CondicionSimple(CondicionSimple::new(columna, simbolo, valor));
+///let cond_or = Condicion::Or(Box(cond_simple), Box(Condicion::SiempreTrue));
+///let cond_and = Condicion::And(Box(cond_or), Box(cond_simple));
+///let cond_not = Condicion::Not(Box(cond_and));
+///
+///let resultado:bool = cond_not.verificar(columnas, valores);
+///
+///**Tipo de condiciones**
+///- CondicionSimple: Es la condición que se encargar de corroborar los operadores =,!=,<,>,>=,<=
+///- And: Es la condición que simula CONDICIÓN && CONDICIÓN
+///- Or: Es la condición que simula CONDICIÓN || CONDICIÓN
+///- Not: Es la condición que simula ! CONDICIÓN
 #[derive(Debug, PartialEq)]
 pub enum Condicion {
     CondicionSimple(CondicionSimple),
@@ -11,6 +28,19 @@ pub enum Condicion {
 }
 
 impl Condicion {
+    ///
+    ///**Condicion.verificar()**
+    ///Verificar si la fila cumple con la condición.
+    ///
+    ///**Parámetros**
+    ///- 'columnas': Es un array de los nombres de la columnas de la tabla a las que representan *'valores'*.
+    ///- 'valores': Es un array con los valores que tiene esa fila para las respectivas columnas de
+    ///la tabla.
+    ///
+    ///**Return**
+    ///Retorna un Result<bool,MyError> si no hubo ningún error en el proceso retorna el bool en
+    ///caso de haberlo devuelve el error de tipo MyError.
+    ///
     pub fn verificar(
         &self,
         columnas: &Vec<String>,

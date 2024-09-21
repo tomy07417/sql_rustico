@@ -1,11 +1,22 @@
 use crate::my_error::MyError;
+use crate::valor::Valor;
 
-#[derive(Debug, PartialEq, PartialOrd)]
-pub enum Valor {
-    Entero(i32),
-    Palabra(String),
-}
-
+///# CondicionSimple
+///Esta es la estructura que proporciona soporte para las operaciones lógica básicas
+///
+///**Ejemplo**
+///let cond = CondicionSimple::new(nombre_columna, =, 4);
+///let resultado:bool = cond.verificar(columnas, valores);
+///
+///**Parámetros**
+///- 'columna': Es un **String** que representa al nombre de la columna al que representa al dato
+///que se quiere comparar.
+///- 'simbolo': Es un **String** que representa al tipo de opreción lógica que se espera realizar
+///en cada comparación para ver si se cumple o no la condición.
+///- 'valor': Es el valor contra el que se compara cada dato que se quiere ver si cumple la
+///condicion.
+///- 'es_int': Es un **bool** que sirve para corroborar si el tipo de dato que se quiere comparar
+///debe ser un *Int* o *String*.
 #[derive(Debug, PartialEq)]
 pub struct CondicionSimple {
     columna: String,
@@ -15,6 +26,17 @@ pub struct CondicionSimple {
 }
 
 impl CondicionSimple {
+    ///# CondicionSimple.new()
+    ///Esta función crea una nueva instacia de CondicionSimple.
+    ///
+    ///**Parámetros**
+    ///- 'columna': Es la columna a la que va a representar el valor que se quiere comparar.
+    ///- 'simbolo': Es el tipo de opreción lógica que se quiere realizar.
+    ///- 'valor': Es el el valor contra el que se van a comparar las distintas filas para ver si
+    ///cumplen o no la condición.
+    ///
+    ///**Return**
+    ///Devuelve un *Struct* de tipo *CondicionSimple*
     pub fn new(columna: String, simbolo: String, valor: String) -> Self {
         return match valor.parse::<i32>() {
             Ok(v) => CondicionSimple {
@@ -31,7 +53,19 @@ impl CondicionSimple {
             },
         };
     }
-
+    ///# CondicionSimple.verificar()
+    ///Esta función verifica si la fila que se le pasa cumple la condición o no
+    ///
+    ///**Parámetros**
+    ///- 'cols': Es un array que representa a los nombres de las columnas de la tabla a la que
+    ///representa *'valores'*.
+    ///- 'valores': Es un array que contiene los valores por columna de una fila de una tabla
+    ///determinada.
+    ///
+    ///**Return**
+    ///Devuelve un Result<bool, MyError>, en caso de que no haya ocurrido ningún error en la
+    ///ejecución de la función se devuelve el *bool*, en caso contrario se devuelve un error de
+    ///tipo *MyError*.
     pub fn verificar(&self, cols: &Vec<String>, valores: &Vec<String>) -> Result<bool, MyError> {
         let index = match cols.iter().position(|p| *p == self.columna) {
             Some(p) => p,

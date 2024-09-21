@@ -7,16 +7,43 @@ use crate::operacion::Operacion;
 use crate::select::Select;
 use crate::update::Update;
 
+///# Parser
+///Esta es la estructura que se encarga de crear las estructuras necesarias para realizar la
+///operación deseada al iniciar el programa en base de la instrucción indicada.
+///
+///**Ejemplo**
+///let mut parser = Parser::new();
+///let operacion:Operacion = parser.crear_operacion(direccion_archivo, instruccion);
+///
+///**Parámetros**
+///- 'index': Este parámetro es el que se va a utilizar para recorrer la instrucción que se le pase
+///al parser para crear la operación esperada.
 #[derive(Debug, PartialEq)]
 pub struct Parser {
     index: usize,
 }
 
 impl Parser {
+    ///# Parser.new()
+    ///Esta función crea una nueva instacia de Parser.
+    ///
+    ///**Return**
+    ///Devuelve un *struct* de tipo *Parser*
     pub fn new() -> Self {
         Parser { index: 0 }
     }
-
+    ///# Parser.crear_operacion()
+    ///Esta función crea la opreación que representa a la intrucción que se le pasa a la función.
+    ///
+    ///**Parámetros**
+    ///- 'archivo': Es la dirección del archivo que representa a la tabla a la que se quiere
+    ///realizar la instrucción indicada.
+    ///- 'instruccion': Es la instrucción que se pasa al comienzo del programa.
+    ///
+    ///**Return**
+    ///Devuelve un *Result<Operacion, MyError>* en caso de que no haya ocurrido ningún error
+    ///durante la ejecución de la función se devuelve un struct de tipo *Operacion* en caso
+    ///contrario se devuelve un error de tipo *MyError*.
     pub fn crear_operacion(
         &mut self,
         archivo: String,

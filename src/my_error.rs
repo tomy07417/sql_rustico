@@ -1,5 +1,14 @@
 use std::fmt;
 
+///# MyError
+///Esta estructura proporciona los tipos de errores que se manejarán en la ejecución del programa.
+///
+///**Tipos**
+///- *InvalidTable*: Son los errores relacionados a la tabla.
+///- *InvalidColumn*: Son los errores relacionados a las columnas de la tabla.
+///- *InvalidSyntax*: Son los errores relacionados a la sintaxis de las instrucciones escritas.
+///- *Error*: Son los todos los otros tipos de errores que ocurren que no estan relacionados a los
+///antes mencionados.
 #[derive(Debug)]
 pub enum MyError {
     InvalidTable(String),

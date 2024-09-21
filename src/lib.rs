@@ -7,3 +7,4 @@ pub mod operacion;
 pub mod parser;
 pub mod select;
 pub mod update;
+pub mod valor;

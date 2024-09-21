@@ -3,6 +3,25 @@ use crate::my_error::MyError;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
+///# Select
+///Esta estructura proporciona todo lo necesario para la implementación de la instrucción SELECT en
+///sql.
+///
+///**Ejemplo**
+///let select = Select::new(direccion_archivo, columnas, condicion, nombre_columna_order, asc);
+///select.seleccionar();
+///
+///**Parámetros**
+///- 'archivo': Es a la dirección del archivo que representa a la tabla que se le quiere
+///realizar dicha operación.
+///- 'columnas': Es un array que tiene el nombre de las columnas que se quieren imprimir por
+///pantalla (No hace falta que tengan el orden que tienen en la tabla).
+///- 'condicion': Es la condición que deben cumplir la fila de la tabla para que puedan ser
+///imprimidas por pantalla.
+///- 'order': Contiene el nombre de la columna por la que se tienen que ordenar las filas que se
+///tienen que mostrar en caso de pedirlo.
+///- 'asc': Es el valor que representa, en caso de pedirlo, a ordenar de manera ascendente si es
+///true o descendente si es false.
 #[derive(Debug, PartialEq)]
 pub struct Select {
     archivo: String,
@@ -13,6 +32,23 @@ pub struct Select {
 }
 
 impl Select {
+    ///# Select.new()
+    ///Esta función crea una nueva instacia de Select.
+    ///
+    ///**Parámetros**
+    ///- 'archivo': Es a la dirección del archivo que representa a la tabla que se le quiere
+    ///realizar dicha operación.
+    ///- 'columnas': Es un array que tiene el nombre de las columnas que se quieren imprimir por
+    ///pantalla (No hace falta que tengan el orden que tienen en la tabla).
+    ///- 'condicion': Es la condición que deben cumplir la fila de la tabla para que puedan ser
+    ///imprimidas por pantalla.
+    ///- 'order': Contiene el nombre de la columna por la que se tienen que ordenar las filas que se
+    ///tienen que mostrar en caso de pedirlo.
+    ///- 'asc': Es el valor que representa, en caso de pedirlo, a ordenar de manera ascendente si es
+    ///true o descendente si es false.
+    ///
+    ///**Return**
+    ///Devuelve un *struct* del tipo *Select*.
     pub fn new(
         archivo: String,
         columnas: Vec<String>,
@@ -28,7 +64,13 @@ impl Select {
             asc,
         }
     }
-
+    ///# Selcet.seleccionar()
+    ///Esta función realiza la instrucción SELECT de sql.
+    ///
+    ///**Return**
+    ///Devuelve un *Result<String, MyError>* en caso que durante la ejecución de la función no haya
+    ///ocurrido ningún erro se devuelve un *String* para indicar que la opreción se realizó
+    ///correctamente, en caso contrario se retorna un error del tipo *MyError*.
     pub fn seleccionar(&self) -> Result<String, MyError> {
         let archivo = match File::open(&self.archivo) {
             Ok(f) => f,
