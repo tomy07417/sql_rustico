@@ -106,22 +106,26 @@ impl Parser {
                 Ok(c) => c,
                 Err(e) => return Err(e),
             };
-
-            match self.armar_orden(&tokens, &mut order, &mut asc) {
-                Ok(c) => c,
-                Err(e) => return Err(e),
-            };
+            println!("{:?} {}", tokens, self.index); 
+            if self.index < tokens.len() {
+                match self.armar_orden(&tokens, &mut order, &mut asc) {
+                    Ok(c) => c,
+                    Err(e) => return Err(e),
+                };
+            }
 
             return Ok(Operacion::Select(Select::new(
                 direccion, columnas, condicion, order, asc,
             )));
         } else {
             let condicion: Condicion = Condicion::SiempreTrue;
-
-            match self.armar_orden(&tokens, &mut order, &mut asc) {
-                Ok(c) => c,
-                Err(e) => return Err(e),
-            };
+            
+            if self.index < tokens.len(){
+                match self.armar_orden(&tokens, &mut order, &mut asc) {
+                    Ok(c) => c,
+                    Err(e) => return Err(e),
+                };
+            }
 
             return Ok(Operacion::Select(Select::new(
                 direccion, columnas, condicion, order, asc,
