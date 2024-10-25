@@ -11,9 +11,9 @@ use std::io::{self, BufRead, Write};
 ///
 ///**Parámetros**
 ///- 'archivo': Contiene la dirección del archivo al que representa a la tabla que se quiere
-///modificar.
+///  modificar.
 ///- 'columnas': Contiene el nombre de todas las columnas que tiene la tabla (tienen que estar en
-///el orden en que estan en la tabla).
+///  el orden en que estan en la tabla).
 ///- 'valores': Contiene todas la filas que se quieren agregar a la tabla.
 #[derive(Debug, PartialEq)]
 pub struct Insert {
@@ -29,7 +29,7 @@ impl Insert {
     ///**Parámetros**
     ///- 'archivo': Es la dirección en donde se encuentra el archivo que se quiere modificar.
     ///- 'columnas': Son los nombres de las columnas de la tabla a la que se quiere modificar
-    ///(deben estar en el orden en el que aparecen en la tabla).
+    ///  (deben estar en el orden en el que aparecen en la tabla).
     ///- 'valores': Son todos las filas que se quieren agragar a la tabla.
     ///
     ///**Return**
@@ -46,7 +46,7 @@ impl Insert {
     ///
     ///**Return**
     ///Devuelve un *Result<String, MyError>* en caso de que durante la ejecución no haya ocurrido
-    ///ningún error se devuelve el *String* de lo contrario se devuelve un error del tipo *MyError*.
+    ///  ningún error se devuelve el *String* de lo contrario se devuelve un error del tipo *MyError*.
     pub fn insertar(&self) -> Result<String, MyError> {
         let archivo = match File::open(&self.archivo) {
             Ok(f) => f,
@@ -75,7 +75,11 @@ impl Insert {
             .map(|s| s.to_string())
             .collect();
 
-        if !(columnas_tablas == self.columnas) {
+        if !self
+            .columnas
+            .iter()
+            .all(|col| columnas_tablas.contains(col))
+        {
             return Err(MyError::InvalidColumn(
                 "Las columnas ingresadas no son válidas para la tabla que se quiere modificar"
                     .to_string(),
@@ -92,17 +96,22 @@ impl Insert {
         };
 
         for dato in &self.valores {
-            let mut linea_nueva = String::new();
-            for valor in dato {
-                if linea_nueva.is_empty() {
-                    linea_nueva = linea_nueva + valor;
+            let mut v: Vec<String> = Vec::new();
+            for col in &columnas_tablas {
+                if self.columnas.contains(col) {
+                    let pos: usize = self
+                        .columnas
+                        .iter()
+                        .position(|c| c == col)
+                        .expect("Error inesperado");
+                    v.push(String::from(&dato[pos]));
                 } else {
-                    linea_nueva = linea_nueva + &String::from(',') + valor;
+                    v.push("".to_string());
                 }
             }
 
-            linea_nueva = linea_nueva + "\n";
-
+            let mut linea_nueva: String = v.join(",");
+            linea_nueva += "\n";
             let _ = archivo_escritura.write_all(linea_nueva.as_bytes());
         }
         Ok(String::from("Insert exitoso"))

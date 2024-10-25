@@ -12,9 +12,9 @@ use std::io::{BufRead, BufReader, Write};
 ///
 ///**Parámetros**
 ///- 'archivo': Es la dirección del archivo que representa a la tabla que se le quiere realizar la
-///operación.
+///  operación.
 ///- 'valores': Es un array que contiene todo los valores que se quieren modificar y en que columna
-///se encuentran.
+///  se encuentran.
 ///- 'condicion': Tiene la condición que deben cumplir las filas para que se le modifique el valor.
 #[derive(Debug, PartialEq)]
 pub struct Update {
@@ -29,9 +29,9 @@ impl Update {
     ///
     ///**Parámetros**
     ///- 'archivo': Es la dirección del archivo que representa a la tabla que se le quiere realizar la
-    ///operación.
+    ///  operación.
     ///- 'valores': Es un array que contiene todo los valores que se quieren modificar y en que columna
-    ///se encuentran.
+    ///  se encuentran.
     ///- 'condicion': Tiene la condición que deben cumplir las filas para que se le modifique el valor.
     ///
     ///**Return**
@@ -48,8 +48,8 @@ impl Update {
     ///
     ///**Reuturn**
     ///Devuelve un *Result<String, MyError>* en caso que durante la ejecución de la función no haya
-    ///ocurrido ningún error se devuelve un *String* para indicar que la operación se realizó
-    ///correctamente, en caso contrario se decvuelve un error del tipo *MyError*.
+    ///  ocurrido ningún error se devuelve un *String* para indicar que la operación se realizó
+    ///  correctamente, en caso contrario se decvuelve un error del tipo *MyError*.
     pub fn update(&self) -> Result<String, MyError> {
         let archivo = match File::open(&self.archivo) {
             Ok(f) => f,
@@ -63,7 +63,7 @@ impl Update {
 
         let mut archivo_temporal = match OpenOptions::new()
             .write(true)
-            .create(true)
+            .truncate(true)
             .open("archivo_temporal.csv")
         {
             Ok(f) => f,
@@ -125,28 +125,25 @@ impl Update {
         Ok(String::from("Se completo el update correctamente"))
     }
 
-    fn crear_linea_nueva(&self, linea: &Vec<String>, columnas: &Vec<String>) -> String {
+    fn crear_linea_nueva(&self, linea: &[String], columnas: &[String]) -> String {
         let mut linea_nueva: String = String::new();
         let mut aux: Vec<&String> = Vec::new();
 
         for i in 0..self.valores.len() {
-            let pos: usize = match columnas.iter().position(|x| *x == self.valores[i][0]) {
-                Some(i) => i,
-                None => 0,
-            };
-            aux.push(&&columnas[pos]);
+            let pos: usize = columnas
+                .iter()
+                .position(|x| *x == self.valores[i][0])
+                .unwrap_or(0);
+            aux.push(&columnas[pos]);
         }
 
         for j in 0..columnas.len() {
             if !linea_nueva.is_empty() {
-                linea_nueva.push_str(",");
+                linea_nueva.push(',');
             }
 
             if aux.contains(&&columnas[j]) {
-                let index = match aux.iter().position(|e| **e == columnas[j]) {
-                    Some(i) => i,
-                    None => 0,
-                };
+                let index = aux.iter().position(|e| **e == columnas[j]).unwrap_or(0);
                 linea_nueva.push_str(&self.valores[index][1]);
             } else {
                 linea_nueva.push_str(&linea[j]);

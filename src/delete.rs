@@ -26,9 +26,9 @@ impl Delete {
     ///
     ///**Parámetros**
     ///- 'archivo': La dirección de donde se encuentra el archivo al que se quiere aplicar la
-    ///opereción.
+    ///  opereción.
     ///- 'condicion': Es la condición que se debe cumplir para que la fila de la tabla sea
-    ///eliminada de la misma.
+    ///  eliminada de la misma.
     ///
     ///**Return**
     ///Devuelve un *struct* de tipo *Delete*.
@@ -37,12 +37,12 @@ impl Delete {
     }
     ///# Delete.eliminar()
     ///Esta función realiza la eliminación de las filas de una tabla que cumplan la condición que ya tiene
-    ///definida el struct.
+    ///  definida el struct.
     ///
     ///**Return**
     ///Devuelve un *Result<String, MyError>* en caso de que no haya ocurrido un error devuelve el
-    ///*String* para avisar que se realizo la operción y en caso contrario se devuelve un error de
-    ///tipo *MyError*.
+    ///  *String* para avisar que se realizo la operción y en caso contrario se devuelve un error de
+    ///  tipo *MyError*.
     pub fn eliminar(&self) -> Result<String, MyError> {
         let archivo = match File::open(&self.archivo) {
             Ok(a) => a,
@@ -56,7 +56,7 @@ impl Delete {
 
         let mut archivo_temporal = match OpenOptions::new()
             .write(true)
-            .create(true)
+            .truncate(true)
             .open("temporal.csv")
         {
             Ok(f) => f,
@@ -96,7 +96,7 @@ impl Delete {
 
             let valores: &Vec<String> = &linea_actual.split(',').map(|s| s.to_string()).collect();
 
-            let verificacion = match self.condicion.verificar(&columnas_tabla, &valores) {
+            let verificacion = match self.condicion.verificar(&columnas_tabla, valores) {
                 Ok(c) => c,
                 Err(e) => return Err(e),
             };

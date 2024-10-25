@@ -17,7 +17,7 @@ use crate::update::Update;
 ///
 ///**Parámetros**
 ///- 'index': Este parámetro es el que se va a utilizar para recorrer la instrucción que se le pase
-///al parser para crear la operación esperada.
+///  al parser para crear la operación esperada.
 #[derive(Debug, PartialEq)]
 pub struct Parser {
     index: usize,
@@ -37,13 +37,13 @@ impl Parser {
     ///
     ///**Parámetros**
     ///- 'archivo': Es la dirección del archivo que representa a la tabla a la que se quiere
-    ///realizar la instrucción indicada.
+    ///  realizar la instrucción indicada.
     ///- 'instruccion': Es la instrucción que se pasa al comienzo del programa.
     ///
     ///**Return**
     ///Devuelve un *Result<Operacion, MyError>* en caso de que no haya ocurrido ningún error
-    ///durante la ejecución de la función se devuelve un struct de tipo *Operacion* en caso
-    ///contrario se devuelve un error de tipo *MyError*.
+    ///  durante la ejecución de la función se devuelve un struct de tipo *Operacion* en caso
+    ///  contrario se devuelve un error de tipo *MyError*.
     pub fn crear_operacion(
         &mut self,
         archivo: String,
@@ -62,13 +62,13 @@ impl Parser {
         archivo: String,
         tokens: Vec<String>,
     ) -> Result<Operacion, MyError> {
-        return match tokens[self.index] {
-           _ if String::from("INSERT") == tokens[self.index] => self.parsear_insert(archivo, tokens),
-           _ if String::from("DELETE") == tokens[self.index] => self.parsear_delete(archivo, tokens),
-           _ if String::from("UPDATE") == tokens[self.index]  => self.parsear_update(archivo, tokens),
-           _ if String::from("SELECT") == tokens[self.index]  => self.parsear_select(archivo, tokens),
+        match tokens[self.index] {
+           _ if *"INSERT" == tokens[self.index] => self.parsear_insert(archivo, tokens),
+           _ if *"DELETE" == tokens[self.index] => self.parsear_delete(archivo, tokens),
+           _ if *"UPDATE" == tokens[self.index]  => self.parsear_update(archivo, tokens),
+           _ if *"SELECT" == tokens[self.index]  => self.parsear_select(archivo, tokens),
             _ => Err(MyError::InvalidSyntax("Instruccion inválida. Las instruccines válidas son: INSERT, DELETE, UPDATE, SELECT".to_string())),
-        };
+        }
     }
     fn parsear_select(
         &mut self,
@@ -80,12 +80,12 @@ impl Parser {
 
         self.avanzar();
 
-        while self.index < tokens.len() && tokens[self.index] != "FROM".to_string() {
+        while self.index < tokens.len() && tokens[self.index] != *"FROM" {
             columnas.push(String::from(&tokens[self.index]).replace(",", ""));
             self.avanzar();
         }
 
-        if self.index == tokens.len() || tokens[self.index] != "FROM".to_string() {
+        if self.index == tokens.len() || tokens[self.index] != *"FROM" {
             return Err(MyError::InvalidSyntax(
                 "Error en la sintaxis de la instrucción (SELECT)".to_string(),
             ));
@@ -100,13 +100,13 @@ impl Parser {
         let mut order: String = String::new();
         let mut asc: bool = true;
 
-        if self.index < tokens.len() && tokens[self.index] == "WHERE".to_string() {
+        if self.index < tokens.len() && tokens[self.index] == *"WHERE" {
             self.avanzar();
             let condicion: Condicion = match self.armar_condicion(&tokens, false) {
                 Ok(c) => c,
                 Err(e) => return Err(e),
             };
-            println!("{:?} {}", tokens, self.index); 
+
             if self.index < tokens.len() {
                 match self.armar_orden(&tokens, &mut order, &mut asc) {
                     Ok(c) => c,
@@ -114,22 +114,22 @@ impl Parser {
                 };
             }
 
-            return Ok(Operacion::Select(Select::new(
+            Ok(Operacion::Select(Select::new(
                 direccion, columnas, condicion, order, asc,
-            )));
+            )))
         } else {
             let condicion: Condicion = Condicion::SiempreTrue;
-            
-            if self.index < tokens.len(){
+
+            if self.index < tokens.len() {
                 match self.armar_orden(&tokens, &mut order, &mut asc) {
                     Ok(c) => c,
                     Err(e) => return Err(e),
                 };
             }
 
-            return Ok(Operacion::Select(Select::new(
+            Ok(Operacion::Select(Select::new(
                 direccion, columnas, condicion, order, asc,
-            )));
+            )))
         }
     }
     fn parsear_update(
@@ -157,7 +157,7 @@ impl Parser {
             Err(e) => return Err(e),
         };
 
-        if self.index == tokens.len() || tokens[self.index] != "WHERE".to_string() {
+        if self.index == tokens.len() || tokens[self.index] != *"WHERE" {
             return Err(MyError::InvalidSyntax(
                 "Error en la sintaxis de la instrucción (UPDATE)".to_string(),
             ));
@@ -186,7 +186,7 @@ impl Parser {
 
         let mut direccion: String = archivo;
 
-        if tokens[self.index] != "FROM".to_string() {
+        if tokens[self.index] != *"FROM" {
             return Err(MyError::InvalidSyntax(
                 "Error en la sintaxis de la instruccion (DELETE)".to_string(),
             ));
@@ -197,7 +197,7 @@ impl Parser {
         direccion.push_str(&nombre_archivo);
         self.avanzar();
 
-        if self.index < tokens.len() && tokens[self.index] == "WHERE".to_string() {
+        if self.index < tokens.len() && tokens[self.index] == *"WHERE" {
             self.avanzar();
             let condicion: Condicion = match self.armar_condicion(&tokens, false) {
                 Ok(c) => c,
@@ -208,14 +208,14 @@ impl Parser {
                 }
             };
 
-            return Ok(Operacion::Delete(Delete::new(direccion, condicion)));
+            Ok(Operacion::Delete(Delete::new(direccion, condicion)))
         } else if self.index == tokens.len() {
             let condicion: Condicion = Condicion::SiempreTrue;
-            return Ok(Operacion::Delete(Delete::new(direccion, condicion)));
+            Ok(Operacion::Delete(Delete::new(direccion, condicion)))
         } else {
-            return Err(MyError::InvalidSyntax(
+            Err(MyError::InvalidSyntax(
                 "Error en la sintaxis de la instrucción (DELETE)".to_string(),
-            ));
+            ))
         }
     }
 
@@ -230,7 +230,7 @@ impl Parser {
         let mut valores: Vec<Vec<String>> = Vec::new();
         let mut direccion = archivo;
 
-        if tokens[self.index] == "INTO".to_string() {
+        if tokens[self.index] == *"INTO" {
             self.avanzar();
 
             let nombre_archivo = "/".to_string() + &String::from(&tokens[self.index]) + ".csv";
@@ -241,7 +241,7 @@ impl Parser {
                 Ok(l) => l,
                 Err(e) => return Err(e),
             };
-            if self.index < tokens.len() && tokens[self.index] == "VALUES".to_string() {
+            if self.index < tokens.len() && tokens[self.index] == *"VALUES" {
                 self.avanzar();
 
                 while self.index < tokens.len() {
@@ -268,16 +268,16 @@ impl Parser {
     }
 
     fn avanzar(&mut self) {
-        self.index = self.index + 1;
+        self.index += 1;
     }
 
     fn armar_orden(
         &mut self,
-        tokens: &Vec<String>,
+        tokens: &[String],
         order: &mut String,
         asc: &mut bool,
     ) -> Result<String, MyError> {
-        if self.index == tokens.len() || tokens[self.index] != "ORDER".to_string() {
+        if self.index == tokens.len() || tokens[self.index] != *"ORDER" {
             return Err(MyError::InvalidSyntax(
                 "Error de sintaxis al definir el ORDER BY".to_string(),
             ));
@@ -285,7 +285,7 @@ impl Parser {
 
         self.avanzar();
 
-        if self.index == tokens.len() || tokens[self.index] != "BY".to_string() {
+        if self.index == tokens.len() || tokens[self.index] != *"BY" {
             return Err(MyError::InvalidSyntax(
                 "Error de sintaxis al definir el ORDER BY".to_string(),
             ));
@@ -301,10 +301,10 @@ impl Parser {
 
         *order = String::from(&tokens[self.index]);
         self.avanzar();
-
-        if self.index < tokens.len() && tokens[self.index] == "desc".to_string() {
+        let tipos_de_orden = ["ASC".to_string(), "DESC".to_string()];
+        if self.index < tokens.len() && tokens[self.index] == *"DESC" {
             *asc = false;
-        } else if self.index < tokens.len() && tokens[self.index] != "desc".to_string() {
+        } else if self.index < tokens.len() && !tipos_de_orden.contains(&tokens[self.index]) {
             return Err(MyError::InvalidSyntax(
                 "Error de sintaxis al definir el ORDER BY".to_string(),
             ));
@@ -313,10 +313,10 @@ impl Parser {
         Ok("Todo ok".to_string())
     }
 
-    fn armar_valores_update(&mut self, tokens: &Vec<String>) -> Result<Vec<Vec<String>>, MyError> {
+    fn armar_valores_update(&mut self, tokens: &[String]) -> Result<Vec<Vec<String>>, MyError> {
         let mut aux: Vec<Vec<String>> = Vec::<Vec<String>>::new();
 
-        while self.index < tokens.len() && tokens[self.index] != "WHERE".to_string() {
+        while self.index < tokens.len() && tokens[self.index] != *"WHERE" {
             let clave = String::from(&tokens[self.index]);
             self.avanzar();
             self.avanzar();
@@ -339,7 +339,7 @@ impl Parser {
         tokens: &Vec<String>,
         prioridad: bool,
     ) -> Result<Condicion, MyError> {
-        let condiciones = vec!["AND".to_string(), "OR".to_string(), "NOT".to_string()];
+        let condiciones = ["AND".to_string(), "OR".to_string(), "NOT".to_string()];
 
         let mut r: Condicion = Condicion::SiempreTrue;
         let mut es_primer_condicion = true;
@@ -349,12 +349,18 @@ impl Parser {
                 let simb = String::from(&tokens[self.index]);
                 self.avanzar();
 
+                if self.index == tokens.len() {
+                    return Err(MyError::InvalidSyntax(
+                        "Error en la escritura de la condición de la consulta".to_string(),
+                    ));
+                }
+
                 let l = match tokens[self.index].contains("(") {
                     true => match self.armar_condicion(tokens, true) {
                         Ok(c) => c,
                         Err(e) => return Err(e),
                     },
-                    false => self.armar_condicion_simple(tokens),
+                    false => self.armar_condicion_simple(tokens)?,
                 };
 
                 r = match simb {
@@ -364,7 +370,7 @@ impl Parser {
                     _ => return Err(MyError::Error("Error inesperado".to_string())),
                 }
             } else if es_primer_condicion {
-                r = self.armar_condicion_simple(tokens);
+                r = self.armar_condicion_simple(tokens)?;
                 es_primer_condicion = false;
             } else {
                 return Err(MyError::InvalidSyntax(
@@ -376,26 +382,53 @@ impl Parser {
         Ok(r)
     }
 
-    fn armar_condicion_simple(&mut self, tokens: &Vec<String>) -> Condicion {
+    fn armar_condicion_simple(&mut self, tokens: &[String]) -> Result<Condicion, MyError> {
         let col = String::from(&tokens[self.index]).replace("(", "");
         self.avanzar();
+
+        if self.index == tokens.len() {
+            return Err(MyError::InvalidSyntax(
+                "Error en la escritura de la condición de la consulta".to_string(),
+            ));
+        }
 
         let s = String::from(&tokens[self.index]);
         self.avanzar();
 
+        if self.index == tokens.len() {
+            return Err(MyError::InvalidSyntax(
+                "Error en la escritura de la condición de la consulta".to_string(),
+            ));
+        }
+
         let val = String::from(&tokens[self.index]).replace(")", "");
         self.avanzar();
 
-        Condicion::CondicionSimple(CondicionSimple::new(col, s, val))
+        Ok(Condicion::CondicionSimple(CondicionSimple::new(
+            col, s, val,
+        )))
     }
 
     fn leer_columnas(
         &mut self,
         cols: &mut Vec<String>,
-        tokens: &Vec<String>,
+        tokens: &[String],
     ) -> Result<String, MyError> {
+        if tokens[self.index].contains("(") && tokens[self.index].contains(")") {
+            cols.push(String::from(
+                &tokens[self.index]
+                    .replace("(", "")
+                    .replace('"', "")
+                    .replace(")", ""),
+            ));
+            self.avanzar();
+            return Ok("Ok".to_string());
+        }
+
         if tokens[self.index].contains("(") {
-            cols.push(String::from(&tokens[self.index].replace("(", "")));
+            cols.push(String::from(
+                &tokens[self.index].replace("(", "").replace('"', ""),
+            ));
             self.avanzar();
 
             while !tokens[self.index].contains(")") && self.index < tokens.len() {
@@ -404,7 +437,12 @@ impl Parser {
             }
 
             if tokens[self.index].contains(")") {
-                cols.push(String::from(&tokens[self.index]).replace(",", ""));
+                cols.push(
+                    String::from(&tokens[self.index])
+                        .replace(")", "")
+                        .replace(",", "")
+                        .replace('"', ""),
+                );
                 self.avanzar();
             } else {
                 return Err(MyError::InvalidSyntax(
@@ -418,6 +456,12 @@ impl Parser {
         }
 
         Ok(String::from("Se realizo con exito"))
+    }
+}
+
+impl Default for Parser {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

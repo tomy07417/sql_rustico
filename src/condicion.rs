@@ -35,7 +35,7 @@ impl Condicion {
     ///**Parámetros**
     ///- 'columnas': Es un array de los nombres de la columnas de la tabla a las que representan *'valores'*.
     ///- 'valores': Es un array con los valores que tiene esa fila para las respectivas columnas de
-    ///la tabla.
+    ///  la tabla.
     ///
     ///**Return**
     ///Retorna un Result<bool,MyError> si no hubo ningún error en el proceso retorna el bool en
@@ -47,7 +47,7 @@ impl Condicion {
         valores: &Vec<String>,
     ) -> Result<bool, MyError> {
         match self {
-            Condicion::CondicionSimple(cond) => return cond.verificar(columnas, valores),
+            Condicion::CondicionSimple(cond) => cond.verificar(columnas, valores),
             Condicion::And(cond1, cond2) => {
                 let c1 = match cond1.verificar(columnas, valores) {
                     Ok(c) => c,
@@ -59,7 +59,7 @@ impl Condicion {
                     Err(e) => return Err(e),
                 };
 
-                return Ok(c1 && c2);
+                Ok(c1 && c2)
             }
 
             Condicion::Or(cond1, cond2) => {
@@ -73,7 +73,7 @@ impl Condicion {
                     Err(e) => return Err(e),
                 };
 
-                return Ok(c1 || c2);
+                Ok(c1 || c2)
             }
             Condicion::Not(cond) => {
                 let c = match cond.verificar(columnas, valores) {
@@ -81,9 +81,9 @@ impl Condicion {
                     Err(e) => return Err(e),
                 };
 
-                return Ok(!c);
+                Ok(!c)
             }
-            Condicion::SiempreTrue => return Ok(true),
+            Condicion::SiempreTrue => Ok(true),
         }
     }
 }

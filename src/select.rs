@@ -13,15 +13,15 @@ use std::io::{BufRead, BufReader};
 ///
 ///**Parámetros**
 ///- 'archivo': Es a la dirección del archivo que representa a la tabla que se le quiere
-///realizar dicha operación.
+///  realizar dicha operación.
 ///- 'columnas': Es un array que tiene el nombre de las columnas que se quieren imprimir por
-///pantalla (No hace falta que tengan el orden que tienen en la tabla).
+///  pantalla (No hace falta que tengan el orden que tienen en la tabla).
 ///- 'condicion': Es la condición que deben cumplir la fila de la tabla para que puedan ser
-///imprimidas por pantalla.
+///  imprimidas por pantalla.
 ///- 'order': Contiene el nombre de la columna por la que se tienen que ordenar las filas que se
-///tienen que mostrar en caso de pedirlo.
+///  tienen que mostrar en caso de pedirlo.
 ///- 'asc': Es el valor que representa, en caso de pedirlo, a ordenar de manera ascendente si es
-///true o descendente si es false.
+///  true o descendente si es false.
 #[derive(Debug, PartialEq)]
 pub struct Select {
     archivo: String,
@@ -37,15 +37,15 @@ impl Select {
     ///
     ///**Parámetros**
     ///- 'archivo': Es a la dirección del archivo que representa a la tabla que se le quiere
-    ///realizar dicha operación.
+    ///  realizar dicha operación.
     ///- 'columnas': Es un array que tiene el nombre de las columnas que se quieren imprimir por
-    ///pantalla (No hace falta que tengan el orden que tienen en la tabla).
+    ///  pantalla (No hace falta que tengan el orden que tienen en la tabla).
     ///- 'condicion': Es la condición que deben cumplir la fila de la tabla para que puedan ser
-    ///imprimidas por pantalla.
+    ///  imprimidas por pantalla.
     ///- 'order': Contiene el nombre de la columna por la que se tienen que ordenar las filas que se
-    ///tienen que mostrar en caso de pedirlo.
+    ///  tienen que mostrar en caso de pedirlo.
     ///- 'asc': Es el valor que representa, en caso de pedirlo, a ordenar de manera ascendente si es
-    ///true o descendente si es false.
+    ///  true o descendente si es false.
     ///
     ///**Return**
     ///Devuelve un *struct* del tipo *Select*.
@@ -69,8 +69,8 @@ impl Select {
     ///
     ///**Return**
     ///Devuelve un *Result<String, MyError>* en caso que durante la ejecución de la función no haya
-    ///ocurrido ningún erro se devuelve un *String* para indicar que la opreción se realizó
-    ///correctamente, en caso contrario se retorna un error del tipo *MyError*.
+    ///  ocurrido ningún erro se devuelve un *String* para indicar que la opreción se realizó
+    ///  correctamente, en caso contrario se retorna un error del tipo *MyError*.
     pub fn seleccionar(&self) -> Result<String, MyError> {
         let archivo = match File::open(&self.archivo) {
             Ok(f) => f,
@@ -93,7 +93,7 @@ impl Select {
             }
         };
 
-        let columnas = linea
+        let columnas: Vec<String> = linea
             .replace("\n", "")
             .split(",")
             .map(|s| s.to_string())
@@ -135,21 +135,21 @@ impl Select {
         let mut aux = String::new();
         for c in &self.columnas {
             if !aux.is_empty() {
-                aux.push_str(",");
+                aux.push(',');
             }
 
             aux.push_str(c);
         }
         let _ = self.ordenar_lineas_elegidas(&mut lineas_elegidas, &columnas);
-        let _ = self.mostrar_lineas_elegidas(lineas_elegidas, columnas);
+        self.mostrar_lineas_elegidas(lineas_elegidas, columnas);
 
         Ok("Proceso completo".to_string())
     }
 
     fn ordenar_lineas_elegidas(
         &self,
-        lineas: &mut Vec<Vec<String>>,
-        col: &Vec<String>,
+        lineas: &mut [Vec<String>],
+        col: &[String],
     ) -> Result<String, MyError> {
         let index = match col.iter().position(|c| *c == self.order) {
             Some(i) => i,
@@ -184,13 +184,10 @@ impl Select {
                 aux = l.join(", ");
             } else {
                 for c in &self.columnas {
-                    let pos = match col.iter().position(|d| *d == *c) {
-                        Some(d) => d,
-                        None => 0,
-                    };
+                    let pos = col.iter().position(|d| *d == *c).unwrap_or(0);
 
                     if !aux.is_empty() {
-                        aux.push_str(",");
+                        aux.push(',');
                     }
 
                     aux.push_str(&l[pos]);
@@ -200,13 +197,13 @@ impl Select {
         }
     }
 
-    fn corroborar_columnas(&self, columnas: &Vec<String>) -> Result<String, MyError> {
+    fn corroborar_columnas(&self, columnas: &[String]) -> Result<String, MyError> {
         if self.columnas.len() == 1 && self.columnas.contains(&"*".to_string()) {
             return Ok("Todo correcto".to_string());
         }
 
         for col in &self.columnas {
-            if !columnas.contains(&col) {
+            if !columnas.contains(col) {
                 return Err(MyError::InvalidColumn(
                     "Hay columnas en la instrucción que no existen en la tabla".to_string(),
                 ));

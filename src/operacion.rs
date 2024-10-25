@@ -34,11 +34,11 @@ impl Operacion {
     ///ocurrido ningún error devuelve un *String* para indicar que la operación se realizó
     ///correctamente, en caso contrario se devuelve un error de tipo *MyErroMyErrorr*.
     pub fn realizar_operacion(&self) -> Result<String, MyError> {
-        return match self {
+        match self {
             Operacion::Insert(insert) => insert.insertar(),
             Operacion::Delete(delete) => delete.eliminar(),
             Operacion::Update(update) => update.update(),
             Operacion::Select(select) => select.seleccionar(),
-        };
+        }
     }
 }

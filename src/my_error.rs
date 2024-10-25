@@ -8,7 +8,7 @@ use std::fmt;
 ///- *InvalidColumn*: Son los errores relacionados a las columnas de la tabla.
 ///- *InvalidSyntax*: Son los errores relacionados a la sintaxis de las instrucciones escritas.
 ///- *Error*: Son los todos los otros tipos de errores que ocurren que no estan relacionados a los
-///antes mencionados.
+///  antes mencionados.
 #[derive(Debug)]
 pub enum MyError {
     InvalidTable(String),

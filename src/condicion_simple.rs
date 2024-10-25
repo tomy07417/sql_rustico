@@ -10,13 +10,13 @@ use crate::valor::Valor;
 ///
 ///**Parámetros**
 ///- 'columna': Es un **String** que representa al nombre de la columna al que representa al dato
-///que se quiere comparar.
+///  que se quiere comparar.
 ///- 'simbolo': Es un **String** que representa al tipo de opreción lógica que se espera realizar
-///en cada comparación para ver si se cumple o no la condición.
+///  en cada comparación para ver si se cumple o no la condición.
 ///- 'valor': Es el valor contra el que se compara cada dato que se quiere ver si cumple la
-///condicion.
+///  condicion.
 ///- 'es_int': Es un **bool** que sirve para corroborar si el tipo de dato que se quiere comparar
-///debe ser un *Int* o *String*.
+///  debe ser un *Int* o *String*.
 #[derive(Debug, PartialEq)]
 pub struct CondicionSimple {
     columna: String,
@@ -33,12 +33,12 @@ impl CondicionSimple {
     ///- 'columna': Es la columna a la que va a representar el valor que se quiere comparar.
     ///- 'simbolo': Es el tipo de opreción lógica que se quiere realizar.
     ///- 'valor': Es el el valor contra el que se van a comparar las distintas filas para ver si
-    ///cumplen o no la condición.
+    ///  cumplen o no la condición.
     ///
     ///**Return**
     ///Devuelve un *Struct* de tipo *CondicionSimple*
     pub fn new(columna: String, simbolo: String, valor: String) -> Self {
-        return match valor.parse::<i32>() {
+        match valor.parse::<i32>() {
             Ok(v) => CondicionSimple {
                 columna,
                 simbolo,
@@ -51,22 +51,22 @@ impl CondicionSimple {
                 valor: Valor::Palabra(valor),
                 es_int: false,
             },
-        };
+        }
     }
     ///# CondicionSimple.verificar()
     ///Esta función verifica si la fila que se le pasa cumple la condición o no
     ///
     ///**Parámetros**
     ///- 'cols': Es un array que representa a los nombres de las columnas de la tabla a la que
-    ///representa *'valores'*.
+    ///  representa *'valores'*.
     ///- 'valores': Es un array que contiene los valores por columna de una fila de una tabla
-    ///determinada.
+    ///  determinada.
     ///
     ///**Return**
     ///Devuelve un Result<bool, MyError>, en caso de que no haya ocurrido ningún error en la
-    ///ejecución de la función se devuelve el *bool*, en caso contrario se devuelve un error de
-    ///tipo *MyError*.
-    pub fn verificar(&self, cols: &Vec<String>, valores: &Vec<String>) -> Result<bool, MyError> {
+    ///  ejecución de la función se devuelve el *bool*, en caso contrario se devuelve un error de
+    ///  tipo *MyError*.
+    pub fn verificar(&self, cols: &[String], valores: &[String]) -> Result<bool, MyError> {
         let index = match cols.iter().position(|p| *p == self.columna) {
             Some(p) => p,
             None => {
@@ -76,7 +76,7 @@ impl CondicionSimple {
             }
         };
 
-        if !self.es_int == valores[index].parse::<i32>().is_ok() {
+        if self.es_int != valores[index].parse::<i32>().is_ok() {
             return Err(MyError::InvalidColumn("El tipo de dato que le corresponde a la columna especificada en la condición no es el utilizado".to_string()));
         }
 
@@ -87,21 +87,18 @@ impl CondicionSimple {
             }),
             false => Valor::Palabra(String::from(&valores[index])),
         };
-        let condicion = match self.simbolo {
-            _ if String::from("=") == self.simbolo => Ok(aux == self.valor),
-            _ if String::from(">") == self.simbolo => Ok(aux > self.valor),
-            _ if String::from("<") == self.simbolo => Ok(aux < self.valor),
-            _ if String::from("!=") == self.simbolo => Ok(aux != self.valor),
-            _ if String::from("<=") == self.simbolo => Ok(aux <= self.valor),
-            _ if String::from(">=") == self.simbolo => Ok(aux >= self.valor),
-            _ => {
-                return Err(MyError::InvalidSyntax(
-                    "El simbolo utilizado en la operación condicional no existe".to_string(),
-                ))
-            }
-        };
 
-        condicion
+        match self.simbolo {
+            _ if *"=" == self.simbolo => Ok(aux == self.valor),
+            _ if *">" == self.simbolo => Ok(aux > self.valor),
+            _ if *"<" == self.simbolo => Ok(aux < self.valor),
+            _ if *"!=" == self.simbolo => Ok(aux != self.valor),
+            _ if *"<=" == self.simbolo => Ok(aux <= self.valor),
+            _ if *">=" == self.simbolo => Ok(aux >= self.valor),
+            _ => Err(MyError::InvalidSyntax(
+                "El simbolo utilizado en la operación condicional no existe".to_string(),
+            )),
+        }
     }
 }
 
