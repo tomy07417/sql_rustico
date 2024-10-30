@@ -360,7 +360,15 @@ impl Parser {
                         Ok(c) => c,
                         Err(e) => return Err(e),
                     },
-                    false => self.armar_condicion_simple(tokens)?,
+                    false => {
+                        if tokens[self.index] == *"NOT" {
+                            self.avanzar();
+                            let aux = self.armar_condicion_simple(tokens)?;
+                            Condicion::Not(Box::new(aux))
+                        } else {
+                            self.armar_condicion_simple(tokens)?
+                        }
+                    },
                 };
 
                 r = match simb {
