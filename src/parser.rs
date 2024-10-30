@@ -368,7 +368,7 @@ impl Parser {
                         } else {
                             self.armar_condicion_simple(tokens)?
                         }
-                    },
+                    }
                 };
 
                 r = match simb {
